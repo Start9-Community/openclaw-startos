@@ -1,7 +1,5 @@
-import { matches, FileHelper } from '@start9labs/start-sdk'
+import { FileHelper, z } from '@start9labs/start-sdk'
 import { sdk } from '../sdk'
-
-const { object, string, some, literals, number, any } = matches
 
 // Auth Profiles: ~/.openclaw/agents/<agentId>/agent/auth-profiles.json
 
@@ -9,25 +7,25 @@ const { object, string, some, literals, number, any } = matches
 export const defaultAgentId = 'main'
 
 // OpenClaw profile types
-const tokenProfileShape = object({
-  type: literals('token'),
-  provider: string,
-  token: string,
+const tokenProfileShape = z.object({
+  type: z.literal('token'),
+  provider: z.string(),
+  token: z.string(),
 })
 
-const oauthProfileShape = object({
-  type: literals('oauth'),
-  provider: string,
-  access: string,
-  refresh: string.optional(),
-  expires: number.optional(),
+const oauthProfileShape = z.object({
+  type: z.literal('oauth'),
+  provider: z.string(),
+  access: z.string(),
+  refresh: z.string().optional(),
+  expires: z.number().optional(),
 })
 
-const profileShape = some(tokenProfileShape, oauthProfileShape)
+const profileShape = z.union([tokenProfileShape, oauthProfileShape])
 
 // The file has a top-level "profiles" key with "provider:label" entries
-const shape = object({
-  profiles: any,
+const shape = z.object({
+  profiles: z.any(),
 })
 
 export const authProfilesJson = FileHelper.json(

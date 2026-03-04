@@ -1,53 +1,51 @@
-import { matches, FileHelper } from '@start9labs/start-sdk'
+import { FileHelper, z } from '@start9labs/start-sdk'
 import { sdk } from '../sdk'
 
-const { object, string, boolean, literal, arrayOf } = matches
-
-const telegramChannelShape = object({
-  enabled: boolean,
-  botToken: string.optional().onMismatch(undefined),
-  dmPolicy: string.optional().onMismatch(undefined),
+const telegramChannelShape = z.object({
+  enabled: z.boolean(),
+  botToken: z.string().optional().catch(undefined),
+  dmPolicy: z.string().optional().catch(undefined),
 })
 
-const whatsappChannelShape = object({
-  dmPolicy: string.optional().onMismatch(undefined),
-  allowFrom: arrayOf(string).optional().onMismatch(undefined),
+const whatsappChannelShape = z.object({
+  dmPolicy: z.string().optional().catch(undefined),
+  allowFrom: z.array(z.string()).optional().catch(undefined),
 })
 
-const channelsShape = object({
-  telegram: telegramChannelShape.optional().onMismatch(undefined),
-  whatsapp: whatsappChannelShape.optional().onMismatch(undefined),
+const channelsShape = z.object({
+  telegram: telegramChannelShape.optional().catch(undefined),
+  whatsapp: whatsappChannelShape.optional().catch(undefined),
 })
 
-const shape = object({
-  gateway: object({
-    auth: object({
-      mode: literal('token'),
-      token: string,
+const shape = z.object({
+  gateway: z.object({
+    auth: z.object({
+      mode: z.literal('token'),
+      token: z.string(),
     }),
-    controlUi: object({
-      enabled: boolean,
-      allowInsecureAuth: boolean,
+    controlUi: z.object({
+      enabled: z.boolean(),
+      allowInsecureAuth: z.boolean(),
     }),
   }),
-  agents: object({
-    defaults: object({
-      model: object({
-        primary: string,
-        fallbacks: arrayOf(string),
+  agents: z.object({
+    defaults: z.object({
+      model: z.object({
+        primary: z.string(),
+        fallbacks: z.array(z.string()),
       }),
-      heartbeat: object({
-        every: string,
-        target: string,
+      heartbeat: z.object({
+        every: z.string(),
+        target: z.string(),
       }),
     }),
   }),
-  skills: object({
-    load: object({
-      extraDirs: arrayOf(string),
+  skills: z.object({
+    load: z.object({
+      extraDirs: z.array(z.string()),
     }),
   }),
-  channels: channelsShape.optional().onMismatch(undefined),
+  channels: channelsShape.optional().catch(undefined),
 })
 
 export const openclawJson = FileHelper.json(

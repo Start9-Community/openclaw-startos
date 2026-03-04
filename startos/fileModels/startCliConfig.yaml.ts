@@ -1,11 +1,9 @@
-import { matches, FileHelper } from '@start9labs/start-sdk'
+import { FileHelper, z } from '@start9labs/start-sdk'
 import { sdk } from '../sdk'
 
-const { object, string } = matches
-
 // start-cli config.yaml shape - only validate what we care about
-const shape = object({
-  host: string.optional().onMismatch(undefined),
+const shape = z.object({
+  host: z.string().optional().catch(undefined),
 })
 
 export const startCliConfigYaml = FileHelper.yaml(

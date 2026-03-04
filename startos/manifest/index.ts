@@ -6,12 +6,12 @@ export const manifest = setupManifest({
   id: 'openclaw',
   title: 'OpenClaw',
   license: 'MIT',
-  wrapperRepo: 'https://github.com/Start9Labs/openclaw-startos',
+  packageRepo:
+    'https://github.com/Start9Labs/openclaw-startos/tree/update/040',
   upstreamRepo: 'https://github.com/openclaw/openclaw',
-  supportSite: 'https://github.com/openclaw/openclaw/issues',
-  marketingSite: 'https://github.com/openclaw/openclaw',
+  marketingUrl: 'https://github.com/openclaw/openclaw',
   donationUrl: null,
-  docsUrl: 'https://docs.openclaw.ai/',
+  docsUrls: ['https://docs.openclaw.ai/'],
   description: { short, long },
   volumes: ['main'],
   images: {

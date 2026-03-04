@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icon.png" alt="OpenClaw Logo" width="21%">
+  <img src="icon.svg" alt="OpenClaw Logo" width="21%">
 </p>
 
 # OpenClaw for StartOS

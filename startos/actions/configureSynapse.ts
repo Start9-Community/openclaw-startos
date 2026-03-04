@@ -47,6 +47,7 @@ export const configureSynapse = sdk.Action.withInput(
     await sdk.action.createTask(effects, 'synapse', createBotUser, 'critical', {
       input: {
         kind: 'partial',
+        // @ts-expect-error cross-SDK type inference; action is disabled
         value: {
           username: input.username,
           password: input.password,
