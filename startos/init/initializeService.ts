@@ -38,7 +38,17 @@ export const initializeService = sdk.setupOnInit(async (effects, kind) => {
     },
   )
 
-  if (kind !== 'install') return
+  if (kind !== 'install') {
+    // Ensure controlUi has required fields for non-loopback binding
+    await openclawJson.merge(effects, {
+      gateway: {
+        controlUi: {
+          dangerouslyAllowHostHeaderOriginFallback: true,
+        },
+      },
+    })
+    return
+  }
 
   // Create required directory structure for openclaw
   await mkdir(
@@ -59,6 +69,7 @@ export const initializeService = sdk.setupOnInit(async (effects, kind) => {
       controlUi: {
         enabled: true,
         allowInsecureAuth: true,
+        dangerouslyAllowHostHeaderOriginFallback: true,
       },
     },
     agents: {

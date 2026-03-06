@@ -26,6 +26,7 @@ const shape = z.object({
     controlUi: z.object({
       enabled: z.boolean(),
       allowInsecureAuth: z.boolean(),
+      dangerouslyAllowHostHeaderOriginFallback: z.boolean(),
     }),
   }),
   agents: z.object({
