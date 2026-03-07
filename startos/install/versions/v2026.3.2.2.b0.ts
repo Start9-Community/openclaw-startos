@@ -1,7 +1,7 @@
 import { VersionInfo } from '@start9labs/start-sdk'
 
-export const v_2026_3_2_1_a0 = VersionInfo.of({
-  version: '2026.3.2:1-alpha.0',
+export const v_2026_3_2_2_b0 = VersionInfo.of({
+  version: '2026.3.2:2-beta.0',
   releaseNotes: {
     en_US: 'Fix gateway controlUi configuration for non-loopback binding.',
     es_ES:
