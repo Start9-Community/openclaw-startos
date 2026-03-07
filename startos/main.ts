@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from 'fs/promises'
 import { installRootCA, loginToOs } from './actions/loginToOs'
+import { openclawJson } from './fileModels/openclaw.json'
 import { startCliConfigYaml } from './fileModels/startCliConfig.yaml'
 import { i18n } from './i18n'
 import { sdk } from './sdk'
@@ -7,6 +8,9 @@ import { mainMounts, uiPort } from './utils'
 
 export const main = sdk.setupMain(async ({ effects }) => {
   console.info(i18n('Starting OpenClaw Gateway!'))
+
+  // Read password for gateway auth (set via critical task during init)
+  await openclawJson.read((c) => c.gateway.auth.password).const(effects)
 
   // Get the OS IP to construct the host URL
   const osIp = await sdk.getOsIp(effects)
