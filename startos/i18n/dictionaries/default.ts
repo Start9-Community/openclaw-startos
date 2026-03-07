@@ -78,6 +78,17 @@ const dict = {
   'WhatsApp QR Code': 64,
   'Scan this QR code with WhatsApp (Settings > Linked Devices > Link a Device):': 65,
 
+  // actions/setPassword.ts
+  'Set Password': 66,
+  'Reset Password': 67,
+  'Set the gateway password needed to log in to the Control UI': 68,
+  'Reset your OpenClaw gateway password': 69,
+  'Password Set': 70,
+  'Use this password to log in to the OpenClaw Control UI.': 71,
+
+  // init/taskSetPassword.ts
+  'Set your OpenClaw gateway password': 72,
+
   // manifest alerts
   'Use ONLY with EXTREME Caution! Do NOT install OpenClaw on a server containing important services or data. DO NOT install OpenClaw on a server that has Bitcoin keys i.e. LND or CLN. OpenClaw uses an LLM of your choosing allowing it to run commands based on your prompts. In addition to privacy concerns when using OpenAI or Anthropic, OpenClaw can run destructive commands to uninstall other services, or could even brick your server.': 49,
 } as const

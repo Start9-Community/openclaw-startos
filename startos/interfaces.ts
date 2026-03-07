@@ -1,7 +1,6 @@
 import { sdk } from './sdk'
 import { uiPort } from './utils'
 import { i18n } from './i18n'
-import { openclawJson } from './fileModels/openclaw.json'
 
 export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
   const uiMulti = sdk.MultiHost.of(effects, 'ui-multi')
@@ -15,15 +14,11 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
       'The OpenClaw Gateway web interface providing WebChat and control panel',
     ),
     type: 'ui',
-    masked: true,
+    masked: false,
     schemeOverride: null,
     username: null,
     path: '',
-    query: {
-      token:
-        (await openclawJson.read((o) => o.gateway.auth.token).const(effects)) ||
-        '',
-    },
+    query: {},
   })
 
   const uiReceipt = await uiMultiOrigin.export([ui])

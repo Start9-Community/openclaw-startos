@@ -1,11 +1,18 @@
-import { randomBytes } from 'crypto'
 import { mkdir } from 'fs/promises'
+import { openclawJson } from '../fileModels/openclaw.json'
+import { startCliConfigYaml } from '../fileModels/startCliConfig.yaml'
 import { sdk } from '../sdk'
 import { mainMounts } from '../utils'
-import { defaultAgentId } from '../fileModels/authProfiles.json'
-import { openclawJson } from '../fileModels/openclaw.json'
 
 export const initializeService = sdk.setupOnInit(async (effects, kind) => {
+  // Get the OS IP and set url to startos/config.yaml
+  const osIp = await sdk.getOsIp(effects)
+  const hostUrl = `https://${osIp}`
+
+  await mkdir(sdk.volumes.main.subpath('.startos'), { recursive: true })
+
+  await startCliConfigYaml.merge(effects, { host: hostUrl })
+
   // Always update workspace bootstrap files on install and upgrade
   await mkdir(sdk.volumes.main.subpath('.openclaw/workspace/memory'), {
     recursive: true,
@@ -38,58 +45,20 @@ export const initializeService = sdk.setupOnInit(async (effects, kind) => {
     },
   )
 
-  if (kind !== 'install') {
-    // Ensure controlUi has required fields for non-loopback binding
-    await openclawJson.merge(effects, {
-      gateway: {
-        controlUi: {
-          dangerouslyAllowHostHeaderOriginFallback: true,
-        },
-      },
-    })
-    return
-  }
-
-  // Create required directory structure for openclaw
-  await mkdir(
-    sdk.volumes.main.subpath(`.openclaw/agents/${defaultAgentId}/agent`),
-    { recursive: true },
-  )
-  await mkdir(sdk.volumes.main.subpath('.openclaw/credentials'), {
-    recursive: true,
-  })
-
-  // Generate initial gateway auth token
-  await openclawJson.write(effects, {
+  // Ensure OpenClaw config has required values on disk (zod catches protect our reads,
+  // but OpenClaw reads the JSON directly)
+  await openclawJson.merge(effects, {
     gateway: {
-      auth: {
-        mode: 'token',
-        token: randomBytes(32).toString('hex'),
-      },
+      auth: { mode: 'password' },
       controlUi: {
         enabled: true,
         allowInsecureAuth: true,
         dangerouslyAllowHostHeaderOriginFallback: true,
-      },
-    },
-    agents: {
-      defaults: {
-        model: {
-          primary: 'anthropic/claude-opus-4-5',
-          fallbacks: [],
-        },
-        heartbeat: {
-          every: '24h',
-          target: 'none',
-        },
+        dangerouslyDisableDeviceAuth: true,
       },
     },
     skills: {
-      load: {
-        extraDirs: ['/opt/skills'],
-      },
+      load: { extraDirs: ['/opt/skills'] },
     },
   })
-
-  // Don't initialize auth profiles - let openclaw handle defaults
 })

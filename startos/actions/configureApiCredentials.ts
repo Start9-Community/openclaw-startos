@@ -86,9 +86,11 @@ const openaiAuthVariants = Variants.of({
 // --- Model lists ---
 
 const anthropicModels = {
-  'claude-sonnet-4-5': 'Claude Sonnet 4.5',
+  'claude-opus-4-6': 'Claude Opus 4.6',
+  'claude-sonnet-4-6': 'Claude Sonnet 4.6',
   'claude-opus-4-5': 'Claude Opus 4.5',
-  'claude-haiku-3-5': 'Claude Haiku 3.5',
+  'claude-sonnet-4-5': 'Claude Sonnet 4.5',
+  'claude-haiku-4-5': 'Claude Haiku 4.5',
 }
 
 const openaiModels = {
@@ -104,7 +106,7 @@ const anthropicProviderSpec = InputSpec.of({
   model: Value.select({
     name: i18n('Model'),
     description: i18n('Select the Anthropic model to use'),
-    default: 'claude-opus-4-5',
+    default: 'claude-opus-4-6',
     values: anthropicModels,
   }),
   auth: Value.union({
@@ -236,7 +238,7 @@ export const configureApiCredentials = sdk.Action.withInput(
     const configData = await openclawJson.read((c) => c).once()
     const primaryModelId =
       configData?.agents?.defaults?.model?.primary ??
-      'anthropic/claude-opus-4-5'
+      'anthropic/claude-opus-4-6'
     const fallbackModelIds =
       configData?.agents?.defaults?.model?.fallbacks ?? []
 
@@ -254,7 +256,7 @@ export const configureApiCredentials = sdk.Action.withInput(
         ? {
             selection: 'anthropic' as const,
             value: {
-              model: primary.model as 'claude-opus-4-5',
+              model: primary.model as 'claude-opus-4-6',
               auth: profileToAuthPrefill(primaryAuth),
             },
           }
@@ -277,7 +279,7 @@ export const configureApiCredentials = sdk.Action.withInput(
           ? {
               selection: 'anthropic' as const,
               value: {
-                model: fallback.model as 'claude-opus-4-5',
+                model: fallback.model as 'claude-opus-4-6',
                 auth: profileToAuthPrefill(fallbackAuth),
               },
             }

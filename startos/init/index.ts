@@ -1,13 +1,13 @@
-import { sdk } from '../sdk'
-import { setDependencies } from '../dependencies'
-import { setInterfaces } from '../interfaces'
-import { versionGraph } from '../install/versionGraph'
 import { actions } from '../actions'
 import { restoreInit } from '../backups'
+import { setDependencies } from '../dependencies'
+import { versionGraph } from '../install/versionGraph'
+import { setInterfaces } from '../interfaces'
+import { sdk } from '../sdk'
 import { initializeService } from './initializeService'
-import { setupStartCli } from './setupStartCli'
-import { loginToOsTask } from './loginToOsTask'
+import { installTasks } from './installTasks'
 import { taskConfigureApi } from './taskConfigureApi'
+import { taskSetPassword } from './taskSetPassword'
 
 export const init = sdk.setupInit(
   restoreInit,
@@ -15,9 +15,9 @@ export const init = sdk.setupInit(
   setInterfaces,
   setDependencies,
   actions,
-  loginToOsTask,
+  installTasks,
   taskConfigureApi,
-  setupStartCli,
+  taskSetPassword,
   initializeService,
 )
 
