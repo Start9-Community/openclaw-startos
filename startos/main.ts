@@ -102,7 +102,6 @@ export const main = sdk.setupMain(async ({ effects }) => {
             ['Package List', ['start-cli', 'package', 'list']],
             ['Package Stats', ['start-cli', 'package', 'stats']],
             ['Notifications', ['start-cli', 'notification', 'list']],
-            ['Tor Services', ['start-cli', 'net', 'tor', 'list-services']],
             ['Network Gateways', ['start-cli', 'net', 'gateway', 'list']],
             ['Disk List', ['start-cli', 'disk', 'list']],
             ['Backup Targets', ['start-cli', 'backup', 'target', 'list']],

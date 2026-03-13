@@ -57,6 +57,11 @@ export const initializeService = sdk.setupOnInit(async (effects, kind) => {
         dangerouslyDisableDeviceAuth: true,
       },
     },
+    agents: {
+      defaults: {
+        heartbeat: { every: '24h' },
+      },
+    },
     skills: {
       load: { extraDirs: ['/opt/skills'] },
     },
