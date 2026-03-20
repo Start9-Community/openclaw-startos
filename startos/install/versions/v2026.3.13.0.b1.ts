@@ -1,7 +1,7 @@
 import { VersionInfo } from '@start9labs/start-sdk'
 
-export const v_2026_3_13_0_b0 = VersionInfo.of({
-  version: '2026.3.13:0-beta.0',
+export const v_2026_3_13_0_b1 = VersionInfo.of({
+  version: '2026.3.13:0-beta.1',
   releaseNotes: {
     en_US:
       'Update to upstream 2026.3.12: refreshed Control UI dashboard, fast mode for OpenAI/Anthropic, provider-plugin architecture for Ollama/vLLM/SGLang, security fixes for device pairing and exec detection, file model resilience improvements.',
