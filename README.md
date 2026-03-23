@@ -63,8 +63,8 @@ On every startup, this package:
 | Setting | Value | Purpose |
 |---------|-------|---------|
 | `start-cli host` | StartOS IP address | Server management connection |
-| Gateway auth token | Random 32-byte hex | Web UI authentication |
-| Default model | `anthropic/claude-opus-4-5` | Primary LLM |
+| Gateway auth token | Random 22-character password | Web UI authentication |
+| Default model | `anthropic/claude-opus-4-6` | Primary LLM |
 | Heartbeat | Every 24h, target none | Agent heartbeat schedule |
 
 ### User-Configurable Settings
@@ -86,7 +86,7 @@ The interface URL includes the authentication token as a query parameter.
 Configure primary and optional fallback LLM providers.
 
 **Providers:**
-- Anthropic (Claude): Sonnet 4.5, Opus 4.5, Haiku 3.5
+- Anthropic (Claude): Opus 4.6, Sonnet 4.6, Opus 4.5, Sonnet 4.5, Haiku 4.5
 - OpenAI: GPT-4o, GPT-4o Mini, o3, o3 Mini
 
 **Authentication methods:**
@@ -100,6 +100,10 @@ Authenticate start-cli with your StartOS server using your master password.
 **Warning:** This grants the package root access to your StartOS server. Only use on a server designated for development purposes.
 
 **Required on install** - created as a critical task.
+
+### Set Password
+
+Set or reset the gateway authentication password for the web UI. Generates a random 22-character password.
 
 ### Connect Telegram
 
@@ -140,9 +144,9 @@ All data is backed up:
 
 | Check | Method | Success Condition |
 |-------|--------|-------------------|
-| Web Interface | Port listening | Port 18789 responds |
+| Web Interface | HTTP check (`checkWebUrl`) | Port 18789 responds |
 
-**Grace period:** 20 seconds
+**Grace period:** 40 seconds
 
 ## Startup Behavior
 
@@ -194,15 +198,18 @@ interfaces:
     type: ui
     port: 18789
     auth: token (query param)
-    masked: true
+    masked: false
 
 actions:
   - id: configure-api-credentials
     name: Configure API Credentials
     has_input: true
     providers:
-      - anthropic (claude-sonnet-4-5, claude-opus-4-5, claude-haiku-3-5)
+      - anthropic (claude-opus-4-6, claude-sonnet-4-6, claude-opus-4-5, claude-sonnet-4-5, claude-haiku-4-5)
       - openai (gpt-4o, gpt-4o-mini, o3, o3-mini)
+  - id: set-password
+    name: Set Password
+    has_input: false
   - id: login-to-os
     name: Login to StartOS
     has_input: true
@@ -221,14 +228,14 @@ dependencies: []
 auto_configure:
   - start-cli host URL
   - gateway auth token
-  - default model (claude-opus-4-5)
+  - default model (claude-opus-4-6)
   - workspace bootstrap files
 
 health_checks:
   - name: Web Interface
-    method: port_listening
+    method: checkWebUrl
     port: 18789
-    grace_period: 20000
+    grace_period: 40000
 
 install_tasks:
   - Login to StartOS (critical)
