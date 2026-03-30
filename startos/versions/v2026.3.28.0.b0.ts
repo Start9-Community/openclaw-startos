@@ -1,7 +1,7 @@
 import { VersionInfo } from '@start9labs/start-sdk'
 
-export const v_2026_3_22_0_b3 = VersionInfo.of({
-  version: '2026.3.22:0-beta.3',
+export const v_2026_3_28_0_b0 = VersionInfo.of({
+  version: '2026.3.28:0-beta.0',
   releaseNotes: {
     en_US: 'Update to upstream 2026.3.22',
     es_ES: 'Actualización a upstream 2026.3.22',
