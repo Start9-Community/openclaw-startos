@@ -2,15 +2,36 @@
   <img src="icon.svg" alt="OpenClaw Logo" width="21%">
 </p>
 
-# OpenClaw for StartOS
+# OpenClaw on StartOS
 
-This repository packages [OpenClaw](https://github.com/openclaw/openclaw) for StartOS. This document describes what makes this package different from a default OpenClaw deployment.
+> **Upstream docs:** <https://docs.openclaw.ai/>
+>
+> Everything not listed in this document should behave the same as upstream
+> OpenClaw. If a feature, setting, or behavior is not mentioned
+> here, the upstream documentation is accurate and fully applicable.
 
-For general OpenClaw usage and features, see the [upstream documentation](https://docs.openclaw.ai/).
+[OpenClaw](https://github.com/openclaw/openclaw) is an AI agent platform with a gateway that provides WebChat, messaging channel integrations, and tool execution. This package bundles it with `start-cli` for direct StartOS server management.
 
-## How This Differs from Upstream
+---
 
-This package bundles OpenClaw with `start-cli` for direct StartOS server management. The gateway runs with full access to query server state, manage packages, and execute commands on your StartOS system. The web interface is token-authenticated and accessible via StartOS network interfaces.
+## Table of Contents
+
+- [Security Warning](#security-warning)
+- [Image and Container Runtime](#image-and-container-runtime)
+- [Volume and Data Layout](#volume-and-data-layout)
+- [Installation and First-Run Flow](#installation-and-first-run-flow)
+- [Configuration Management](#configuration-management)
+- [Network Access and Interfaces](#network-access-and-interfaces)
+- [Actions (StartOS UI)](#actions-startos-ui)
+- [Dependencies](#dependencies)
+- [Backups and Restore](#backups-and-restore)
+- [Health Checks](#health-checks)
+- [Limitations and Differences](#limitations-and-differences)
+- [What Is Unchanged from Upstream](#what-is-unchanged-from-upstream)
+- [Contributing](#contributing)
+- [Quick Reference for AI Consumers](#quick-reference-for-ai-consumers)
+
+---
 
 ## Security Warning
 
@@ -24,7 +45,7 @@ This package bundles OpenClaw with `start-cli` for direct StartOS server managem
 
 This package is intended for **development and experimentation only**.
 
-## Container Runtime
+## Image and Container Runtime
 
 This package runs **1 custom container**:
 
@@ -38,21 +59,34 @@ The container includes:
 - Workspace bootstrap files (SOUL.md, IDENTITY.md, HEARTBEAT.md, MEMORY.md)
 - Pre-installed skills directory
 
-## Volumes
+## Volume and Data Layout
 
-| Volume | Contents | Backed Up |
-|--------|----------|-----------|
-| `main` | All OpenClaw data, credentials, workspace | Yes |
+| Volume | Mount Point | Purpose |
+|--------|-------------|---------|
+| `main` | `/data` | All OpenClaw data, credentials, workspace |
 
-## Install Flow
+**Key paths on the `main` volume:**
 
-On installation:
+- `.openclaw/` — agent state, credentials, workspace
+- `.openclaw/workspace/` — SOUL.md, IDENTITY.md, HEARTBEAT.md, MEMORY.md
+- `.startos/` — start-cli configuration
+
+## Installation and First-Run Flow
+
+On install/update/restore:
+
 1. Creates directory structure (`.openclaw/agents`, `.openclaw/credentials`, `.openclaw/workspace`)
-2. Copies workspace bootstrap files (SOUL.md, IDENTITY.md, HEARTBEAT.md, MEMORY.md)
-3. Generates random gateway authentication token
-4. Configures start-cli with StartOS server IP
-5. Creates task to "Login to StartOS" for start-cli authentication
-6. Creates task to "Configure API Credentials" for LLM provider setup
+2. Deploys workspace bootstrap files (SOUL.md, IDENTITY.md, HEARTBEAT.md, MEMORY.md — preserves existing MEMORY.md)
+3. If no password exists: creates **critical task** — "Set Password"
+4. If no API credentials exist: creates **critical task** — "Configure API Credentials"
+
+On every startup:
+
+1. Updates `start-cli` config with current StartOS server IP
+2. Sets file ownership (`chown` on `/data`)
+3. Starts the gateway daemon
+4. After gateway is ready: checks `start-cli` login status — creates **important task** "Login to StartOS" if not authenticated
+5. Captures a server state snapshot to `MEMORY.md` (server metrics, packages, notifications, network, disk info)
 
 ## Configuration Management
 
@@ -71,7 +105,7 @@ On every startup, this package:
 
 All configuration is done through Actions (see below).
 
-## Network Interfaces
+## Network Access and Interfaces
 
 | Interface | Type | Port | Authentication | Description |
 |-----------|------|------|----------------|-------------|
@@ -79,66 +113,84 @@ All configuration is done through Actions (see below).
 
 The interface URL includes the authentication token as a query parameter.
 
-## Actions
-
-### Configure API Credentials
-
-Configure primary and optional fallback LLM providers.
-
-**Providers:**
-- Anthropic (Claude): Opus 4.6, Sonnet 4.6, Opus 4.5, Sonnet 4.5, Haiku 4.5
-- OpenAI: GPT-4o, GPT-4o Mini, o3, o3 Mini
-
-**Authentication methods:**
-- API Key: Standard API key from provider console
-- OAuth: Access token from Claude Pro/Max or ChatGPT Plus subscription
-
-### Login to StartOS
-
-Authenticate start-cli with your StartOS server using your master password.
-
-**Warning:** This grants the package root access to your StartOS server. Only use on a server designated for development purposes.
-
-**Required on install** - created as a critical task.
+## Actions (StartOS UI)
 
 ### Set Password
 
-Set or reset the gateway authentication password for the web UI. Generates a random 22-character password.
+| Property | Value |
+|----------|-------|
+| ID | `set-password` |
+| Availability | Any status |
+| Visibility | Enabled |
+| Group | None |
+| Input | None |
+| Output | Generated 22-character password (masked, copyable) |
+| Auto-created | Critical task if no password exists |
+
+Sets or resets the gateway authentication password for the web UI. The action name dynamically changes to "Reset Password" if a password already exists.
+
+### Configure API Credentials
+
+| Property | Value |
+|----------|-------|
+| ID | `configure-api-credentials` |
+| Availability | Any status |
+| Visibility | Enabled |
+| Group | None |
+| Auto-created | Critical task if no credentials exist |
+
+**Input:** Primary provider (required) and optional fallback provider, each with:
+- Provider: Anthropic or OpenAI
+- Model selection (Anthropic: Opus 4.6, Sonnet 4.6, Opus 4.5, Sonnet 4.5, Haiku 4.5; OpenAI: GPT-4o, GPT-4o Mini, o3, o3 Mini)
+- Auth method: API Key or OAuth (Claude Pro/Max or ChatGPT Plus token)
+
+### Login to StartOS
+
+| Property | Value |
+|----------|-------|
+| ID | `login-to-os` |
+| Availability | Any status |
+| Visibility | Enabled |
+| Group | None |
+| Input | StartOS master password |
+| Output | None |
+| Auto-created | Important task if start-cli is not authenticated (checked on each startup) |
+
+**Warning:** This grants the package root access to your StartOS server. Only use on a server designated for development purposes.
 
 ### Connect Telegram
 
-**Group:** Channels
+| Property | Value |
+|----------|-------|
+| ID | `connect-telegram` |
+| Availability | Any status |
+| Visibility | Enabled |
+| Group | Channels |
+| Output | Confirmation message |
 
-Connect a Telegram bot to chat with your AI agent.
-
-**Prerequisites:** Create a bot with @BotFather first
-
-**Options:**
-- Bot Token: From @BotFather
-- DM Policy: Pairing (approve code) or Open (anyone can DM)
+**Input:** Bot token (from @BotFather, required, masked) and DM policy (Pairing or Open).
 
 ### Connect WhatsApp
 
-**Group:** Channels
+| Property | Value |
+|----------|-------|
+| ID | `connect-whatsapp` |
+| Availability | **Running only** |
+| Visibility | Enabled |
+| Group | Channels |
+| Output | QR code to scan with WhatsApp |
 
-Connect WhatsApp via QR code to chat with your AI agent.
-
-**Requires service to be running.**
-
-**Options:**
-- DM Policy: Allowlist (specific numbers) or Open (anyone)
-- Allowed Phone Numbers: Comma-separated international format
-
-Returns a QR code to scan with WhatsApp (Settings > Linked Devices > Link a Device).
+**Input:** DM policy (Allowlist or Open) and allowed phone numbers (comma-separated, international format). Scan the returned QR code with WhatsApp (Settings > Linked Devices > Link a Device).
 
 ## Dependencies
 
 None. OpenClaw on StartOS is standalone.
 
-## Backups
+## Backups and Restore
 
-All data is backed up:
-- `main` volume - credentials, agent state, workspace, accumulated memories
+**Included in backup:** The entire `main` volume — credentials, agent state, workspace, accumulated memories.
+
+**Restore behavior:** All data is restored. Critical tasks for Set Password and Configure API Credentials are re-created if credentials are missing (same as fresh install logic).
 
 ## Health Checks
 
@@ -148,21 +200,7 @@ All data is backed up:
 
 **Grace period:** 40 seconds
 
-## Startup Behavior
-
-On each startup, after the gateway is ready:
-
-1. **Check Login**: Verifies start-cli authentication; creates task if not logged in
-2. **Server State Snapshot**: Captures server metrics, packages, notifications, network, and disk info to `MEMORY.md`
-
-The server state snapshot includes:
-- Server metrics and time
-- Package list and stats
-- Notifications
-- Tor services and network gateways
-- Disk list and backup targets
-
-## Limitations
+## Limitations and Differences
 
 1. **Messaging channels**: Only Telegram and WhatsApp are configured via Actions; other channels (Slack, Discord, Signal, Matrix) require manual configuration
 2. **Synapse integration**: Matrix/Synapse bot user creation is implemented but disabled
@@ -170,7 +208,7 @@ The server state snapshot includes:
 4. **Browser automation**: Limited without display access
 5. **Privacy**: All prompts sent to external AI providers (Anthropic/OpenAI)
 
-## What's Unchanged
+## What Is Unchanged from Upstream
 
 - WebChat interface functionality
 - AI model interactions
@@ -180,7 +218,13 @@ The server state snapshot includes:
 
 ---
 
-## Quick Reference (YAML)
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for build instructions and development workflow.
+
+---
+
+## Quick Reference for AI Consumers
 
 ```yaml
 package_id: openclaw
