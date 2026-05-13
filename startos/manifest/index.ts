@@ -10,13 +10,6 @@ export const manifest = setupManifest({
   upstreamRepo: 'https://github.com/openclaw/openclaw',
   marketingUrl: 'https://github.com/openclaw/openclaw',
   donationUrl: null,
-  docsUrls: [
-    'https://docs.openclaw.ai/channels',
-    'https://docs.openclaw.ai/pi',
-    'https://docs.openclaw.ai/tools',
-    'https://docs.openclaw.ai/models',
-    'https://docs.openclaw.ai/gateway',
-  ],
   description: { short, long },
   volumes: ['main'],
   images: {
