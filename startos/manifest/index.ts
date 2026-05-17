@@ -6,7 +6,7 @@ export const manifest = setupManifest({
   id: 'openclaw',
   title: 'OpenClaw',
   license: 'MIT',
-  packageRepo: 'https://github.com/Start9Labs/openclaw-startos',
+  packageRepo: 'https://github.com/Start9-Community/openclaw-startos',
   upstreamRepo: 'https://github.com/openclaw/openclaw',
   marketingUrl: 'https://github.com/openclaw/openclaw',
   donationUrl: null,
