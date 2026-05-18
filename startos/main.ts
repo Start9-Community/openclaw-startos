@@ -30,6 +30,16 @@ export const main = sdk.setupMain(async ({ effects }) => {
   )
 
   return sdk.Daemons.of(effects)
+    .addOneshot('install-root-ca', {
+      subcontainer: openclawSub,
+      exec: {
+        fn: async (subcontainer) => {
+          await installRootCA(effects, subcontainer)
+          return null
+        },
+      },
+      requires: [],
+    })
     .addOneshot('chown', {
       subcontainer: openclawSub,
       exec: {
@@ -53,6 +63,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
         env: {
           HOME: '/data',
           OPENCLAW_STATE_DIR: '/data/.openclaw',
+          NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt',
         },
       },
       ready: {
@@ -68,13 +79,12 @@ export const main = sdk.setupMain(async ({ effects }) => {
           ),
         gracePeriod: 40_000,
       },
-      requires: ['chown'],
+      requires: ['install-root-ca', 'chown'],
     })
     .addOneshot('check-login', {
       subcontainer: openclawSub,
       exec: {
         fn: async (subcontainer) => {
-          await installRootCA(effects, subcontainer)
           const result = await subcontainer.exec(
             ['start-cli', 'auth', 'session', 'list'],
             { user: 'root', env: { HOME: '/data' } },
