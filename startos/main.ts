@@ -45,7 +45,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
       exec: {
         command: ['chown', '-R', 'node:node', '/data'],
       },
-      requires: ['install-root-ca'],
+      requires: [],
     })
     .addDaemon('primary', {
       subcontainer: openclawSub,
@@ -85,7 +85,6 @@ export const main = sdk.setupMain(async ({ effects }) => {
       subcontainer: openclawSub,
       exec: {
         fn: async (subcontainer) => {
-          // Root CA already installed by install-root-ca oneshot
           const result = await subcontainer.exec(
             ['start-cli', 'auth', 'session', 'list'],
             { user: 'root', env: { HOME: '/data' } },
