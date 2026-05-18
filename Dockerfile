@@ -46,6 +46,7 @@ COPY workspace/HEARTBEAT.md /opt/workspace/HEARTBEAT.md
 ENV NODE_ENV=production
 ENV HOME=/data
 ENV OPENCLAW_STATE_DIR=/data/.openclaw
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 # Include openclaw binary paths - both npm global and where openclaw may install its native binary
 ENV PATH="/opt/openclaw-home/.openclaw/bin:/usr/local/lib/node_modules/openclaw/bin:/usr/local/bin:$PATH"
 
