@@ -47,6 +47,17 @@ export const main = sdk.setupMain(async ({ effects }) => {
       },
       requires: [],
     })
+    .addOneshot('fix-openclaw-plugin-ownership', {
+      subcontainer: openclawSub,
+      exec: {
+        command: [
+          'sh',
+          '-lc',
+          'd=/data/.openclaw/npm/node_modules/@openclaw; [ ! -d "$d" ] || chown -R root:root "$d"',
+        ],
+      },
+      requires: ['chown'],
+    })
     .addDaemon('primary', {
       subcontainer: openclawSub,
       exec: {
@@ -79,7 +90,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
           ),
         gracePeriod: 40_000,
       },
-      requires: ['install-root-ca', 'chown'],
+      requires: ['install-root-ca', 'fix-openclaw-plugin-ownership'],
     })
     .addOneshot('check-login', {
       subcontainer: openclawSub,
