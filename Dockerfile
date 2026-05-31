@@ -1,8 +1,8 @@
 FROM node:22-bookworm-slim
 
 ARG STARTOS_VERSION
-ARG GH_VERSION=2.87.3
-ARG OPENCLAW_VERSION=2026.5.12
+ARG GH_VERSION=2.90.0
+ARG OPENCLAW_VERSION=2026.5.28
 
 # Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
