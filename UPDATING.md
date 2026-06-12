@@ -21,4 +21,4 @@ OpenClaw is installed into the image at build time by the official `openclaw.bot
 - **OpenClaw** — edit `Dockerfile` and update the `OPENCLAW_VERSION` ARG default to the new version (no `v` prefix).
 - **GitHub CLI** — edit `Dockerfile` and update the `GH_VERSION` ARG default to the new version (no `v` prefix).
 
-After editing, confirm with `grep -rn '<OLD_VERSION>' --include='*.ts' --include=Dockerfile` that no stale references remain, then bump `version` and update `releaseNotes` in the current `startos/versions/*.ts` file per the package's versioning conventions.
+After editing, confirm with `grep -rn '<OLD_VERSION>' --include='*.ts' --include=Dockerfile` that no stale references remain, then bump `version` and update `releaseNotes` in `startos/versions/current.ts` per the package's versioning conventions.

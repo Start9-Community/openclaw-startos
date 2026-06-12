@@ -1,16 +1,34 @@
 import { mkdir, readFile, writeFile } from 'fs/promises'
 import { installRootCA, loginToOs } from './actions/loginToOs'
+import { authProfilesJson } from './fileModels/authProfiles.json'
 import { openclawJson } from './fileModels/openclaw.json'
 import { startCliConfigYaml } from './fileModels/startCliConfig.yaml'
 import { i18n } from './i18n'
 import { sdk } from './sdk'
 import { mainMounts, uiPort } from './utils'
 
+const providerKeyEnvVar: Record<string, string> = {
+  anthropic: 'ANTHROPIC_API_KEY',
+  openai: 'OPENAI_API_KEY',
+}
+
 export const main = sdk.setupMain(async ({ effects }) => {
   console.info(i18n('Starting OpenClaw Gateway!'))
 
   // Read password for gateway auth (set via critical task during init)
   await openclawJson.read((c) => c.gateway.auth.password).const(effects)
+
+  // OpenClaw reads provider API keys from env, not the auth-profiles.json that
+  // Configure API Credentials writes — bridge stored API keys to the gateway env.
+  const profiles =
+    (await authProfilesJson.read((p) => p.profiles).const(effects)) ?? {}
+  const providerKeyEnv: Record<string, string> = {}
+  for (const [provider, varName] of Object.entries(providerKeyEnvVar)) {
+    const profile = profiles[`${provider}:default`]
+    if (profile?.type === 'token' && profile.token) {
+      providerKeyEnv[varName] = profile.token
+    }
+  }
 
   // Get the OS IP to construct the host URL
   const osIp = await sdk.getOsIp(effects)
@@ -64,6 +82,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
           HOME: '/data',
           OPENCLAW_STATE_DIR: '/data/.openclaw',
           NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt',
+          ...providerKeyEnv,
         },
       },
       ready: {
