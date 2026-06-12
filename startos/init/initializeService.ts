@@ -13,7 +13,7 @@ export const initializeService = sdk.setupOnInit(async (effects, kind) => {
 
   await startCliConfigYaml.merge(effects, { host: hostUrl })
 
-  // Always update workspace bootstrap files on install and upgrade
+  // Seed workspace bootstrap files only when missing, so user edits survive upgrades
   await mkdir(sdk.volumes.main.subpath('.openclaw/workspace/memory'), {
     recursive: true,
   })
@@ -23,30 +23,26 @@ export const initializeService = sdk.setupOnInit(async (effects, kind) => {
     mainMounts(),
     'copy-soul',
     async (subc) => {
-      await subc.execFail(
-        [
-          'cp',
-          '/opt/workspace/SOUL.md',
-          '/opt/workspace/IDENTITY.md',
-          '/opt/workspace/HEARTBEAT.md',
-          '/data/.openclaw/workspace/',
-        ],
-        { user: 'root' },
-      )
-      // Only seed MEMORY.md if it doesn't already exist, to preserve accumulated memories
-      await subc.exec(
-        [
-          'sh',
-          '-c',
-          'test -f /data/.openclaw/workspace/MEMORY.md || cp /opt/workspace/MEMORY.md /data/.openclaw/workspace/MEMORY.md',
-        ],
-        { user: 'root' },
-      )
+      for (const file of [
+        'SOUL.md',
+        'IDENTITY.md',
+        'HEARTBEAT.md',
+        'MEMORY.md',
+      ]) {
+        await subc.execFail(
+          [
+            'sh',
+            '-c',
+            `test -f /data/.openclaw/workspace/${file} || cp /opt/workspace/${file} /data/.openclaw/workspace/${file}`,
+          ],
+          { user: 'root' },
+        )
+      }
     },
   )
 
-  // Ensure OpenClaw config has required values on disk (zod catches protect our reads,
-  // but OpenClaw reads the JSON directly)
+  // Always enforce the gateway settings the StartOS proxy requires (OpenClaw reads
+  // the JSON directly); deep-merge leaves the user's password and other keys intact.
   await openclawJson.merge(effects, {
     gateway: {
       auth: { mode: 'password' },
@@ -57,13 +53,21 @@ export const initializeService = sdk.setupOnInit(async (effects, kind) => {
         dangerouslyDisableDeviceAuth: true,
       },
     },
-    agents: {
-      defaults: {
-        heartbeat: { every: '24h' },
-      },
-    },
-    skills: {
-      load: { extraDirs: ['/opt/skills'] },
-    },
   })
+
+  // Ensure the bundled skills dir stays on the load path without dropping user-added dirs
+  const config = await openclawJson.read((c) => c).once()
+  const extraDirs = config?.skills?.load?.extraDirs ?? []
+  if (!extraDirs.includes('/opt/skills')) {
+    await openclawJson.merge(effects, {
+      skills: { load: { extraDirs: [...extraDirs, '/opt/skills'] } },
+    })
+  }
+
+  // Seed user-tunable defaults on first install only
+  if (kind === 'install') {
+    await openclawJson.merge(effects, {
+      agents: { defaults: { heartbeat: { every: '24h' } } },
+    })
+  }
 })

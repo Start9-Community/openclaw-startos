@@ -14,7 +14,7 @@ OpenClaw can execute commands on your StartOS server through an LLM. Run it only
 
 - **The OpenClaw Gateway**, served over the **Web UI** interface — a browser-based control panel and WebChat where you talk to your agent.
 - **`start-cli` bundled in the container**, so once you authenticate the package (see *Login to StartOS* below) the agent can manage your StartOS server directly: read service status, install or remove packages, send notifications, and so on.
-- **Workspace files preserved across upgrades.** SOUL, IDENTITY, MEMORY, and HEARTBEAT live on the package's `main` volume; MEMORY is preserved on updates while the others are kept in sync with package defaults.
+- **Workspace files preserved across upgrades.** SOUL, IDENTITY, MEMORY, and HEARTBEAT live on the package's `main` volume and are seeded from the package defaults only when missing, so any edits you make persist across updates.
 - **A persistent server snapshot in MEMORY.md** captured on each startup so the agent has fresh context about the host it's running on.
 
 ## Getting set up

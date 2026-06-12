@@ -76,7 +76,7 @@ The container includes:
 On install/update/restore:
 
 1. Creates directory structure (`.openclaw/agents`, `.openclaw/credentials`, `.openclaw/workspace`)
-2. Deploys workspace bootstrap files (SOUL.md, IDENTITY.md, HEARTBEAT.md, MEMORY.md — preserves existing MEMORY.md)
+2. Seeds workspace bootstrap files (SOUL.md, IDENTITY.md, HEARTBEAT.md, MEMORY.md) only when missing, preserving any existing files across upgrades
 3. If no password exists: creates **critical task** — "Set Password"
 4. If no API credentials exist: creates **critical task** — "Configure API Credentials"
 
