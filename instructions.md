@@ -47,10 +47,11 @@ OpenClaw can listen on several messaging platforms in addition to the Web UI. Tw
 - **Reset Password** — re-runs Set Password to rotate the gateway auth token. The new password is shown once.
 - **Configure AI Provider** — re-run any time to switch providers, change models, rotate API keys, or add/remove a fallback. The form is pre-filled with your current provider and model; API keys are never shown, so leave a key blank to keep the one already saved.
 - **Login to StartOS** — re-run if `start-cli` ever loses its session (a task automatically reappears on the Dashboard if the package detects it isn't authenticated).
+- **Revoke StartOS Access** — removes OpenClaw's stored `start-cli` authentication, cutting off server administration without uninstalling the service. Run *Login to StartOS* again to grant it back.
 
 ## Limitations
 
 - **Privacy.** With a cloud provider (Anthropic, OpenAI, Google, xAI), every prompt is forwarded to that provider — treat anything you type as visible to them. Choose a local backend (Ollama, vLLM, llama.cpp) to keep inference on your server.
-- **Destructive capability.** Once **Login to StartOS** is complete the agent can run commands that uninstall services, change configuration, or render the server unusable. There is no built-in confirmation step; if you want a guardrail, don't run Login to StartOS.
+- **Destructive capability.** Once **Login to StartOS** is complete the agent can run commands that uninstall services, change configuration, or render the server unusable. There is no built-in confirmation step; if you want a guardrail, don't run Login to StartOS. If you already granted access, run **Revoke StartOS Access** to remove the stored authentication.
 - **Voice features and browser automation** advertised in the upstream docs are not available in this package — there is no companion app and no display attached to the container.
 - **Channels beyond Telegram and WhatsApp** (Slack, Discord, Signal, Matrix, etc.) are not wired into StartOS actions. Configure them by editing the gateway configuration following the upstream channels documentation.

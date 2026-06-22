@@ -4,6 +4,7 @@ import { connectTelegram } from './connectTelegram'
 import { connectWhatsapp } from './connectWhatsapp'
 // import { configureSynapse } from './configureSynapse'
 import { loginToOs } from './loginToOs'
+import { revokeStartOsAccess } from './revokeStartOsAccess'
 import { setPassword } from './setPassword'
 
 export const actions = sdk.Actions.of()
@@ -13,3 +14,4 @@ export const actions = sdk.Actions.of()
   .addAction(connectWhatsapp)
   // .addAction(configureSynapse)
   .addAction(loginToOs)
+  .addAction(revokeStartOsAccess)

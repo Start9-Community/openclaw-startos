@@ -38,7 +38,7 @@
 **Use with caution.** OpenClaw runs an LLM of your choosing that can execute commands on your behalf.
 
 - On its own, OpenClaw is a chat agent with no access to your server. It gains that access only when you run **Login to StartOS**, which grants it root-equivalent control through the bundled `start-cli`.
-- Once granted, the agent can run destructive commands — uninstall services, change configuration — with no built-in confirmation step. Skip Login to StartOS if you want that guardrail.
+- Once granted, the agent can run destructive commands — uninstall services, change configuration — with no built-in confirmation step. Skip Login to StartOS if you want that guardrail, or run **Revoke StartOS Access** afterward to remove the stored authentication.
 - Do NOT install on a server holding important data or keys (e.g. LND or CLN).
 - With a cloud AI provider, your prompts and context leave the device; choose a local backend (Ollama, vLLM, llama.cpp) to keep inference on your server.
 
@@ -157,6 +157,19 @@ The selected model is the default; change it anytime from Web UI chat with the `
 | Auto-created | Important task if start-cli is not authenticated (checked on each startup) |
 
 **Warning:** This grants the package root access to your StartOS server. Only use on a server designated for development purposes.
+
+### Revoke StartOS Access
+
+| Property | Value |
+|----------|-------|
+| ID | `revoke-startos-access` |
+| Availability | Any status |
+| Visibility | Enabled |
+| Group | None |
+| Input | None |
+| Output | None |
+
+Removes OpenClaw's stored `start-cli` authentication (the `.cookies.json` saved on the data volume), cutting off server-administration access without uninstalling the service. Run **Login to StartOS** again to grant access back.
 
 ### Connect Telegram
 

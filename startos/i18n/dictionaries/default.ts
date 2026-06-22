@@ -97,6 +97,13 @@ const dict = {
 
   // init/taskSetPassword.ts
   'Set your OpenClaw gateway password': 78,
+
+  // actions/revokeStartOsAccess.ts
+  'Revoke StartOS Access': 79,
+  "Remove OpenClaw's stored start-cli authentication so it can no longer administer this StartOS server": 80,
+  'OpenClaw will lose StartOS administrative access until you run Login to StartOS again.': 81,
+  'StartOS Access Revoked': 82,
+  "OpenClaw's stored start-cli authentication was removed. Run Login to StartOS to grant access again.": 83,
 } as const
 
 /**
