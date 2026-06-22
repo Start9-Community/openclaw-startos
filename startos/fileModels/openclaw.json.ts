@@ -53,6 +53,34 @@ const skillsSchema = z.object({
   load: loadSchema.catch(() => loadSchema.parse({})),
 })
 
+// Custom/local provider catalog (openclaw.json `models.providers`). Configure AI
+// Provider writes an `openai-completions` entry here for each selected local
+// backend (Ollama/vLLM/llama.cpp), pointing at its `.startos` endpoint.
+const providerEntryShape = z.object({
+  baseUrl: z.string().optional().catch(undefined),
+  apiKey: z.string().optional().catch(undefined),
+  api: z.string().optional().catch(undefined),
+  timeoutSeconds: z.number().optional().catch(undefined),
+  models: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string().optional().catch(undefined),
+        input: z.array(z.string()).optional().catch(undefined),
+      }),
+    )
+    .optional()
+    .catch(undefined),
+})
+
+const modelsSchema = z.object({
+  mode: z.string().optional().catch(undefined),
+  providers: z
+    .record(z.string(), providerEntryShape)
+    .optional()
+    .catch(undefined),
+})
+
 const shape = z.object({
   gateway: gatewaySchema.catch(() => gatewaySchema.parse({})),
   agents: z
@@ -61,6 +89,7 @@ const shape = z.object({
     })
     .optional()
     .catch(undefined),
+  models: modelsSchema.optional().catch(undefined),
   skills: skillsSchema.catch(() => skillsSchema.parse({})),
   channels: z
     .object({

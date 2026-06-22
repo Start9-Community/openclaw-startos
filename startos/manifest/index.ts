@@ -28,16 +28,42 @@ export const manifest = setupManifest({
   alerts: {
     install: installAlert,
   },
-  dependencies: {},
-  // dependencies: {
-  //   synapse: {
-  //     description:
-  //       'Used as a Matrix homeserver for multi-channel messaging.',
-  //     optional: true,
-  //     metadata: {
-  //       title: 'Synapse Matrix Homeserver',
-  //       icon: 'https://matrix.org/images/matrix-logo.svg',
-  //     },
-  //   },
-  // },
+  // Declared optional; setupDependencies (dependencies.ts) flips the selected
+  // local backend to a `running` dependency based on the Configure AI Provider
+  // model selection. Cloud providers need no dependency.
+  dependencies: {
+    ollama: {
+      optional: true,
+      description: {
+        en_US:
+          'Optional: run local LLMs with Ollama. Select it as your backend in the Configure AI Provider action.',
+      },
+      metadata: {
+        icon: 'https://raw.githubusercontent.com/Start9Labs/ollama-startos/master/icon.svg',
+        title: 'Ollama',
+      },
+    },
+    vllm: {
+      optional: true,
+      description: {
+        en_US:
+          "Optional: serve local LLMs through vLLM's OpenAI-compatible API. Select it as your backend in the Configure AI Provider action.",
+      },
+      metadata: {
+        icon: 'https://raw.githubusercontent.com/Start9Labs/vllm-startos/master/icon.svg',
+        title: 'vLLM',
+      },
+    },
+    'llama-cpp': {
+      optional: true,
+      description: {
+        en_US:
+          'Optional: run local GGUF models with llama.cpp. Select it as your backend in the Configure AI Provider action.',
+      },
+      metadata: {
+        icon: 'https://raw.githubusercontent.com/Start9Labs/llama-cpp-startos/master/icon.png',
+        title: 'llama.cpp',
+      },
+    },
+  },
 })

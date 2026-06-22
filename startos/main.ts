@@ -7,9 +7,13 @@ import { i18n } from './i18n'
 import { sdk } from './sdk'
 import { mainMounts, uiPort } from './utils'
 
+// Maps each provider's auth-profile id to the env var OpenClaw reads its API
+// key from. Keep in sync with MANAGED_PROVIDERS in configureApiCredentials.ts.
 const providerKeyEnvVar: Record<string, string> = {
   anthropic: 'ANTHROPIC_API_KEY',
   openai: 'OPENAI_API_KEY',
+  google: 'GEMINI_API_KEY',
+  xai: 'XAI_API_KEY',
 }
 
 export const main = sdk.setupMain(async ({ effects }) => {
@@ -19,7 +23,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
   await openclawJson.read((c) => c.gateway.auth.password).const(effects)
 
   // OpenClaw reads provider API keys from env, not the auth-profiles.json that
-  // Configure API Credentials writes — bridge stored API keys to the gateway env.
+  // Configure AI Provider writes — bridge stored API keys to the gateway env.
   const profiles =
     (await authProfilesJson.read((p) => p.profiles).const(effects)) ?? {}
   const providerKeyEnv: Record<string, string> = {}

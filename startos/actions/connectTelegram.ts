@@ -5,8 +5,8 @@ import { i18n } from '../i18n'
 const { InputSpec, Value } = sdk
 
 const dmPolicies = {
-  pairing: 'Pairing (approve code on first contact)',
-  open: 'Open (anyone can DM)',
+  pairing: i18n('Pairing (approve code on first contact)'),
+  open: i18n('Open (anyone can DM)'),
 }
 
 const inputSpec = InputSpec.of({

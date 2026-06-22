@@ -6,8 +6,8 @@ import { i18n } from '../i18n'
 const { InputSpec, Value } = sdk
 
 const dmPolicies = {
-  allowlist: 'Allowlist (only allowed numbers)',
-  open: 'Open (anyone can DM)',
+  allowlist: i18n('Allowlist (only allowed numbers)'),
+  open: i18n('Open (anyone can DM)'),
 }
 
 const inputSpec = InputSpec.of({
@@ -93,7 +93,7 @@ export const connectWhatsapp = sdk.Action.withInput(
     if (result.exitCode !== 0) {
       throw new Error(
         i18n('WhatsApp login failed') +
-          `: ${error || output || 'Unknown error'}`,
+          `: ${error || output || i18n('Unknown error')}`,
       )
     }
 

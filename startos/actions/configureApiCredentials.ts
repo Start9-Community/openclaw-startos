@@ -1,213 +1,262 @@
 import { sdk } from '../sdk'
-import {
-  authProfilesJson,
-  AuthProfile,
-  AuthProfilesFile,
-} from '../fileModels/authProfiles.json'
+import { authProfilesJson, AuthProfile } from '../fileModels/authProfiles.json'
 import { openclawJson } from '../fileModels/openclaw.json'
+import { readDependencyApiKey } from '../utils'
 import { i18n } from '../i18n'
 
 const { InputSpec, Value, Variants } = sdk
 
-// --- Auth method variants (shared between primary and fallback) ---
+// Cloud providers OpenClaw resolves from environment API keys (the path main.ts
+// bridges and the only one current OpenClaw builds read at runtime — see #12).
+// The union key is OpenClaw's provider prefix in `provider/model` refs; the env
+// var is what main.ts sets. Keep both in sync with main.ts `providerKeyEnvVar`.
+const MANAGED_PROVIDERS = ['anthropic', 'openai', 'google', 'xai'] as const
 
-const anthropicAuthVariants = Variants.of({
-  'api-key': {
-    name: i18n('API Key'),
-    spec: InputSpec.of({
-      apiKey: Value.text({
-        name: i18n('API Key'),
-        description: i18n('Your Anthropic API key from console.anthropic.com'),
-        required: true,
-        default: null,
-        masked: true,
-        placeholder: 'sk-ant-...',
-      }),
-    }),
+// Local inference backends route to the matching StartOS package. The save
+// handler writes a `models.providers.<id>` entry pointing at the package's
+// `.startos` endpoint; the union key is also the `provider/model` prefix and the
+// dependency id setupDependencies gates on. Ollama uses its native API (`api:
+// "ollama"`, NO `/v1` — `/v1` breaks tool calling); vLLM/llama.cpp are
+// OpenAI-compatible (`/v1`). needsKey backends read a real key from the
+// dependency's published credentials; the rest take any value on a private LAN.
+const LOCAL_BACKENDS: Record<
+  string,
+  { baseUrl: string; api: string; needsKey: boolean }
+> = {
+  ollama: {
+    baseUrl: 'http://ollama.startos:11434',
+    api: 'ollama',
+    needsKey: false,
   },
-  oauth: {
-    name: i18n('OAuth (Claude Pro/Max)'),
-    spec: InputSpec.of({
-      accessToken: Value.text({
-        name: i18n('Access Token'),
-        description: i18n(
-          'OAuth access token from Claude Pro/Max subscription',
-        ),
-        required: true,
-        default: null,
-        masked: true,
-      }),
-      refreshToken: Value.text({
-        name: i18n('Refresh Token'),
-        description: i18n('OAuth refresh token (optional)'),
-        required: false,
-        default: null,
-        masked: true,
-      }),
-    }),
+  vllm: {
+    baseUrl: 'http://vllm.startos:8000/v1',
+    api: 'openai-completions',
+    needsKey: true,
   },
-})
-
-const openaiAuthVariants = Variants.of({
-  'api-key': {
-    name: i18n('API Key'),
-    spec: InputSpec.of({
-      apiKey: Value.text({
-        name: i18n('API Key'),
-        description: i18n('Your OpenAI API key from platform.openai.com'),
-        required: true,
-        default: null,
-        masked: true,
-        placeholder: 'sk-...',
-      }),
-    }),
+  'llama-cpp': {
+    baseUrl: 'http://llama-cpp.startos:8080/v1',
+    api: 'openai-completions',
+    needsKey: false,
   },
-  oauth: {
-    name: i18n('OAuth (ChatGPT Plus)'),
-    spec: InputSpec.of({
-      accessToken: Value.text({
-        name: i18n('Access Token'),
-        description: i18n('OAuth access token from ChatGPT Plus subscription'),
-        required: true,
-        default: null,
-        masked: true,
-      }),
-      refreshToken: Value.text({
-        name: i18n('Refresh Token'),
-        description: i18n('OAuth refresh token (optional)'),
-        required: false,
-        default: null,
-        masked: true,
-      }),
-    }),
-  },
-})
-
-// --- Model lists ---
-
-const anthropicModels = {
-  'claude-opus-4-6': 'Claude Opus 4.6',
-  'claude-sonnet-4-6': 'Claude Sonnet 4.6',
-  'claude-opus-4-5': 'Claude Opus 4.5',
-  'claude-sonnet-4-5': 'Claude Sonnet 4.5',
-  'claude-haiku-4-5': 'Claude Haiku 4.5',
 }
 
-const openaiModels = {
-  'gpt-4o': 'GPT-4o',
-  'gpt-4o-mini': 'GPT-4o Mini',
-  o3: 'o3',
-  'o3-mini': 'o3 Mini',
+// Curated default-model catalogs (exact API model id → label). The chosen model
+// is only the default; it can be changed anytime from Web UI chat with /model,
+// and the Custom Model field below accepts any id not yet listed.
+const ANTHROPIC_MODELS = {
+  'claude-opus-4-8': i18n('Claude Opus 4.8 — most capable'),
+  'claude-opus-4-7': i18n('Claude Opus 4.7'),
+  'claude-sonnet-4-6': i18n('Claude Sonnet 4.6 — balanced'),
+  'claude-haiku-4-5': i18n('Claude Haiku 4.5 — fast & cheap'),
+  'claude-fable-5': i18n('Claude Fable 5 — premium'),
+}
+const OPENAI_MODELS = {
+  'gpt-5.5': i18n('GPT-5.5 — strongest'),
+  'gpt-5.4': i18n('GPT-5.4'),
+  'gpt-5.4-mini': i18n('GPT-5.4 Mini — fast & cheap'),
+}
+const GEMINI_MODELS = {
+  'gemini-3.1-pro-preview': i18n('Gemini 3.1 Pro'),
+  'gemini-3-flash-preview': i18n('Gemini 3 Flash — fast'),
+}
+const GROK_MODELS = {
+  'grok-4.3': i18n('Grok 4.3 — flagship'),
+  'grok-build-0.1': i18n('Grok Build 0.1 — agentic coding'),
 }
 
-// --- Provider specs (model selector + auth) ---
-
-const anthropicProviderSpec = InputSpec.of({
+// Default-model dropdown + an optional Custom field, so a brand-new id can be
+// used without waiting for a package update. `pickModel` resolves the pair.
+const modelDropdown = <V extends Record<string, string>>(
+  values: V,
+  def: keyof V & string,
+) => ({
   model: Value.select({
-    name: i18n('Model'),
-    description: i18n('Select the Anthropic model to use'),
-    default: 'claude-opus-4-6',
-    values: anthropicModels,
+    name: i18n('Default Model'),
+    description: i18n(
+      'The model this provider uses by default. Change it anytime from Web UI chat with the /model command.',
+    ),
+    default: def,
+    values,
   }),
-  auth: Value.union({
-    name: i18n('Authentication'),
-    description: i18n('How to authenticate with Anthropic'),
-    default: 'api-key',
-    variants: anthropicAuthVariants,
-  }),
-})
-
-const openaiProviderSpec = InputSpec.of({
-  model: Value.select({
-    name: i18n('Model'),
-    description: i18n('Select the OpenAI model to use'),
-    default: 'gpt-4o',
-    values: openaiModels,
-  }),
-  auth: Value.union({
-    name: i18n('Authentication'),
-    description: i18n('How to authenticate with OpenAI'),
-    default: 'api-key',
-    variants: openaiAuthVariants,
+  customModel: Value.text({
+    name: i18n('Custom Model (optional)'),
+    description: i18n(
+      'Use an exact model id that is not in the list above. Leave blank to use the dropdown selection.',
+    ),
+    required: false,
+    default: null,
+    placeholder: def,
   }),
 })
 
-// --- Primary LLM (required) ---
+const apiKeyField = (placeholder: string) =>
+  Value.text({
+    name: i18n('API Key'),
+    description: i18n(
+      'API key for this provider. Leave blank to keep the key already saved.',
+    ),
+    required: false,
+    default: null,
+    masked: true,
+    placeholder,
+  })
 
-const primaryVariants = Variants.of({
-  anthropic: {
-    name: i18n('Anthropic (Claude)'),
-    spec: anthropicProviderSpec,
-  },
-  openai: {
-    name: i18n('OpenAI'),
-    spec: openaiProviderSpec,
-  },
-})
+// Resolve the model from a dropdown+custom pair — a filled Custom field wins.
+const pickModel = (v: { model?: string; customModel?: string | null }) =>
+  (v.customModel ?? '').trim() || v.model || ''
 
-// --- Fallback LLM (optional) ---
+// Prefill a dropdown+custom pair: select a known id, else route an unknown
+// (custom) id to the Custom field. Never returns an API key (keys aren't echoed).
+const prefillModel = (
+  catalog: Record<string, string>,
+  id: string | undefined,
+) => (id == null ? {} : id in catalog ? { model: id } : { customModel: id })
 
+const providerSpec = (
+  models: Record<string, string>,
+  def: string,
+  keyPlaceholder: string,
+) =>
+  InputSpec.of({
+    ...modelDropdown(models, def),
+    apiKey: apiKeyField(keyPlaceholder),
+  })
+
+const anthropic = {
+  name: i18n('Anthropic (Claude)'),
+  spec: providerSpec(ANTHROPIC_MODELS, 'claude-opus-4-8', 'sk-ant-...'),
+}
+const openai = {
+  name: i18n('OpenAI (GPT)'),
+  spec: providerSpec(OPENAI_MODELS, 'gpt-5.5', 'sk-...'),
+}
+const google = {
+  name: i18n('Google (Gemini)'),
+  spec: providerSpec(GEMINI_MODELS, 'gemini-3.1-pro-preview', 'AIza...'),
+}
+const xai = {
+  name: i18n('xAI (Grok)'),
+  spec: providerSpec(GROK_MODELS, 'grok-4.3', 'xai-...'),
+}
+
+// Local backends take a single served-model field; baseUrl (and vLLM's key) are
+// wired by the save handler into openclaw.json `models.providers.<id>`.
+const servedModelField = (placeholder: string) =>
+  Value.text({
+    name: i18n('Default Model'),
+    description: i18n(
+      'The exact model id your local server serves. Change it anytime from Web UI chat with the /model command.',
+    ),
+    required: true,
+    default: null,
+    placeholder,
+  })
+
+const ollama = {
+  name: i18n('Ollama (local)'),
+  spec: InputSpec.of({ model: servedModelField('llama3.1:8b') }),
+}
+const vllm = {
+  name: i18n('vLLM (local)'),
+  spec: InputSpec.of({ model: servedModelField('Qwen/Qwen2.5-7B-Instruct') }),
+}
+const llamacpp = {
+  name: i18n('llama.cpp (local)'),
+  spec: InputSpec.of({
+    model: servedModelField('the model your server serves'),
+  }),
+}
+
+const allVariants = {
+  anthropic,
+  openai,
+  google,
+  xai,
+  ollama,
+  vllm,
+  'llama-cpp': llamacpp,
+}
+
+const primaryVariants = Variants.of(allVariants)
 const fallbackVariants = Variants.of({
-  disabled: {
-    name: i18n('Disabled'),
-    spec: InputSpec.of({}),
-  },
-  anthropic: {
-    name: i18n('Anthropic (Claude)'),
-    spec: anthropicProviderSpec,
-  },
-  openai: {
-    name: i18n('OpenAI'),
-    spec: openaiProviderSpec,
-  },
+  disabled: { name: i18n('Disabled'), spec: InputSpec.of({}) },
+  ...allVariants,
 })
-
-// --- Input spec ---
 
 const inputSpec = InputSpec.of({
   primary: Value.union({
-    name: i18n('Primary LLM'),
-    description: i18n('Select your primary AI model and provider'),
+    name: i18n('Primary Provider'),
+    description: i18n(
+      'The backend your agent uses by default. Cloud providers (Anthropic, OpenAI, Google, xAI) need an API key; local backends (Ollama, vLLM, llama.cpp) run on your StartOS server and are added as a dependency.',
+    ),
     default: 'anthropic',
     variants: primaryVariants,
   }),
   fallback: Value.union({
-    name: i18n('Fallback LLM (Optional)'),
+    name: i18n('Fallback Provider (optional)'),
     description: i18n(
-      'Select a fallback AI model used when the primary is unavailable (rate limited, auth failure, etc.)',
+      'Used automatically when the primary is rate-limited or unavailable. Choose Disabled to skip.',
     ),
     default: 'disabled',
     variants: fallbackVariants,
   }),
 })
 
-// --- Helpers ---
+// --- Prefill helpers ---
 
-function profileToAuthPrefill(profile: AuthProfile | undefined) {
-  if (profile?.type === 'token') {
-    return {
-      selection: 'api-key' as const,
-      value: { apiKey: profile.token },
-    }
-  } else if (profile?.type === 'oauth') {
-    return {
-      selection: 'oauth' as const,
-      value: {
-        accessToken: profile.access,
-        refreshToken: profile.refresh ?? null,
-      },
-    }
-  }
-  return { selection: 'api-key' as const, value: { apiKey: '' } }
+function splitModelId(id: string | undefined) {
+  if (!id) return undefined
+  const i = id.indexOf('/')
+  return i === -1
+    ? { provider: 'anthropic', model: id }
+    : { provider: id.slice(0, i), model: id.slice(i + 1) }
 }
 
-function parseModelId(modelId: string): { provider: string; model: string } {
-  const slashIdx = modelId.indexOf('/')
-  if (slashIdx === -1) return { provider: 'anthropic', model: modelId }
-  return {
-    provider: modelId.slice(0, slashIdx),
-    model: modelId.slice(slashIdx + 1),
+// Reconstruct a provider union value from a stored `provider/model` ref. Returns
+// null for an unknown/unmanaged provider so the caller can fall back.
+function prefillProvider(id: string | undefined) {
+  const parsed = splitModelId(id)
+  if (!parsed) return null
+  switch (parsed.provider) {
+    case 'anthropic':
+      return {
+        selection: 'anthropic' as const,
+        value: prefillModel(ANTHROPIC_MODELS, parsed.model),
+      }
+    case 'openai':
+      return {
+        selection: 'openai' as const,
+        value: prefillModel(OPENAI_MODELS, parsed.model),
+      }
+    case 'google':
+      return {
+        selection: 'google' as const,
+        value: prefillModel(GEMINI_MODELS, parsed.model),
+      }
+    case 'xai':
+      return {
+        selection: 'xai' as const,
+        value: prefillModel(GROK_MODELS, parsed.model),
+      }
+    case 'ollama':
+      return { selection: 'ollama' as const, value: { model: parsed.model } }
+    case 'vllm':
+      return { selection: 'vllm' as const, value: { model: parsed.model } }
+    case 'llama-cpp':
+      return {
+        selection: 'llama-cpp' as const,
+        value: { model: parsed.model },
+      }
+    default:
+      return null
   }
+}
+
+// --- Save helper ---
+
+type ProviderUnion = {
+  selection: string
+  value: { model?: string; customModel?: string | null; apiKey?: string | null }
 }
 
 // --- Action ---
@@ -216,9 +265,9 @@ export const configureApiCredentials = sdk.Action.withInput(
   'configure-api-credentials',
 
   async ({ effects }) => ({
-    name: i18n('Configure API Credentials'),
+    name: i18n('Configure AI Provider'),
     description: i18n(
-      'Configure your primary and optional fallback AI model, including provider credentials',
+      'Choose the AI backend your agent uses — a cloud provider (with an API key) or a local model server (Ollama, vLLM, llama.cpp) — pick a model, and optionally add a fallback.',
     ),
     warning: null,
     allowedStatuses: 'any',
@@ -228,148 +277,117 @@ export const configureApiCredentials = sdk.Action.withInput(
 
   inputSpec,
 
-  // Pre-fill form with current values
+  // Pre-fill provider + model from the stored config. API keys are never echoed
+  // back into the form (the field's `default: null` leaves them blank).
   async ({ effects }) => {
-    const authData = (await authProfilesJson
-      .read((p) => p)
-      .once()) as AuthProfilesFile | null
-    const profiles = authData?.profiles ?? {}
-
-    const configData = await openclawJson.read((c) => c).once()
-    const primaryModelId =
-      configData?.agents?.defaults?.model?.primary ??
-      'anthropic/claude-opus-4-6'
-    const fallbackModelIds =
-      configData?.agents?.defaults?.model?.fallbacks ?? []
-
-    const primary = parseModelId(primaryModelId)
-    const anthropicProfile = profiles['anthropic:default'] as
-      | AuthProfile
-      | undefined
-    const openaiProfile = profiles['openai:default'] as AuthProfile | undefined
-
-    // Pre-fill primary
-    const primaryAuth =
-      primary.provider === 'anthropic' ? anthropicProfile : openaiProfile
-    const primaryResult =
-      primary.provider === 'anthropic'
-        ? {
-            selection: 'anthropic' as const,
-            value: {
-              model: primary.model as 'claude-opus-4-6',
-              auth: profileToAuthPrefill(primaryAuth),
-            },
-          }
-        : {
-            selection: 'openai' as const,
-            value: {
-              model: primary.model as 'gpt-4o',
-              auth: profileToAuthPrefill(primaryAuth),
-            },
-          }
-
-    // Pre-fill fallback
-    let fallbackResult
-    if (fallbackModelIds.length > 0) {
-      const fallback = parseModelId(fallbackModelIds[0])
-      const fallbackAuth =
-        fallback.provider === 'anthropic' ? anthropicProfile : openaiProfile
-      fallbackResult =
-        fallback.provider === 'anthropic'
-          ? {
-              selection: 'anthropic' as const,
-              value: {
-                model: fallback.model as 'claude-opus-4-6',
-                auth: profileToAuthPrefill(fallbackAuth),
-              },
-            }
-          : {
-              selection: 'openai' as const,
-              value: {
-                model: fallback.model as 'gpt-4o',
-                auth: profileToAuthPrefill(fallbackAuth),
-              },
-            }
-    } else {
-      fallbackResult = { selection: 'disabled' as const, value: {} }
-    }
+    const model = await openclawJson
+      .read((c) => c.agents?.defaults?.model)
+      .once()
+      .catch(() => undefined)
 
     return {
-      primary: primaryResult,
-      fallback: fallbackResult,
+      primary: prefillProvider(model?.primary) ?? {
+        selection: 'anthropic' as const,
+        value: {},
+      },
+      fallback: prefillProvider(model?.fallbacks?.[0]) ?? {
+        selection: 'disabled' as const,
+        value: {},
+      },
     }
   },
 
-  // Save handler
+  // Save: cloud providers write a token profile (bridged to env by main.ts);
+  // local backends write a `models.providers.<id>` entry. Both set the
+  // `provider/model` refs in openclaw.json, then restart.
   async ({ effects, input }) => {
-    const primaryUnion = input.primary as any
-    const fallbackUnion = input.fallback as any
+    const existing: Record<string, AuthProfile> =
+      (await authProfilesJson.read((p) => p.profiles).once()) ?? {}
 
-    const primaryProvider: string = primaryUnion.selection
-    const primaryModel: string = primaryUnion.value?.model
-    const primaryAuth = primaryUnion.value?.auth
+    const profiles: Record<string, AuthProfile> = { ...existing }
+    // Drop our managed cloud defaults; re-add only the providers selected below.
+    // Separately-created profiles (e.g. OAuth, named accounts) are preserved.
+    for (const p of MANAGED_PROVIDERS) delete profiles[`${p}:default`]
 
-    // Extract auth profile from union input
-    function extractProfile(provider: string, auth: any): AuthProfile | null {
-      if (auth?.selection === 'api-key' && auth.value?.apiKey) {
-        return { type: 'token', provider, token: auth.value.apiKey }
-      } else if (auth?.selection === 'oauth' && auth.value?.accessToken) {
-        return {
-          type: 'oauth',
-          provider,
-          access: auth.value.accessToken,
-          refresh: auth.value.refreshToken ?? undefined,
+    type LocalEntry = {
+      baseUrl: string
+      apiKey: string
+      api: string
+      timeoutSeconds: number
+      models: { id: string; name: string; input: string[] }[]
+    }
+    // models.providers entries for the selected local backend(s), deep-merged
+    // into openclaw.json. A backend the user has stopped using lingers
+    // harmlessly (inert once unreferenced; its dependency is dropped by
+    // setupDependencies).
+    const providers: Record<string, LocalEntry> = {}
+
+    const resolve = async (u: ProviderUnion): Promise<string | undefined> => {
+      if (u.selection === 'disabled') return undefined
+      const sel = u.selection
+
+      // Cloud provider — API key bridged to env via main.ts.
+      if ((MANAGED_PROVIDERS as readonly string[]).includes(sel)) {
+        const prev = existing[`${sel}:default`]
+        const key =
+          (u.value.apiKey ?? '').trim() ||
+          (prev?.type === 'token' ? prev.token : undefined)
+        if (key) {
+          profiles[`${sel}:default`] = {
+            type: 'token',
+            provider: sel,
+            token: key,
+          }
         }
+        return `${sel}/${pickModel(u.value)}`
       }
-      return null
+
+      // Local backend — an openai-completions provider in models.providers.
+      const backend = LOCAL_BACKENDS[sel]
+      const model = (u.value.model ?? '').trim()
+      let apiKey = 'startos' // ignored by keyless backends (Ollama/llama.cpp)
+      if (backend.needsKey) {
+        const k = await readDependencyApiKey(effects, sel)
+        if (!k) {
+          throw new Error(
+            i18n(
+              'vLLM is selected but its API key could not be read from vllm:public/credentials.json. Make sure vLLM is installed and running.',
+            ),
+          )
+        }
+        apiKey = k
+      }
+      const entry: LocalEntry = providers[sel] ?? {
+        baseUrl: backend.baseUrl,
+        apiKey,
+        api: backend.api,
+        timeoutSeconds: 300,
+        models: [],
+      }
+      // Overriding models.providers disables auto-discovery, so the chosen model
+      // must be listed explicitly for OpenClaw to treat it as known.
+      if (model && !entry.models.some((m) => m.id === model)) {
+        entry.models.push({ id: model, name: model, input: ['text'] })
+      }
+      providers[sel] = entry
+      return `${sel}/${model}`
     }
 
-    const primaryProfile = extractProfile(primaryProvider, primaryAuth)
-
-    const fallbackProvider: string = fallbackUnion.selection
-    let fallbackProfile: AuthProfile | null = null
-    if (fallbackProvider !== 'disabled') {
-      fallbackProfile = extractProfile(
-        fallbackProvider,
-        fallbackUnion.value?.auth,
-      )
-    }
-
-    // Read existing profiles and merge
-    const authData = (await authProfilesJson
-      .read((p) => p)
-      .once()) as AuthProfilesFile | null
-    const profiles: Record<string, AuthProfile> = {
-      ...(authData?.profiles ?? {}),
-    }
-
-    // Clear existing default profiles for both providers
-    delete profiles['anthropic:default']
-    delete profiles['openai:default']
-
-    // Set profiles for configured providers
-    if (primaryProfile) {
-      profiles[`${primaryProvider}:default`] = primaryProfile
-    }
-    if (fallbackProfile && fallbackProvider !== 'disabled') {
-      profiles[`${fallbackProvider}:default`] = fallbackProfile
-    }
+    const primary = await resolve(input.primary as ProviderUnion)
+    const fallbackId = await resolve(input.fallback as ProviderUnion)
 
     await authProfilesJson.write(effects, { profiles })
-
-    // Build model config
-    const primary = `${primaryProvider}/${primaryModel}`
-    const fallbacks: string[] = []
-    if (fallbackProvider !== 'disabled' && fallbackUnion.value?.model) {
-      fallbacks.push(`${fallbackProvider}/${fallbackUnion.value.model}`)
-    }
-
     await openclawJson.merge(effects, {
+      models: { mode: 'merge', providers },
       agents: {
         defaults: {
-          model: { primary, fallbacks },
+          model: { primary, fallbacks: fallbackId ? [fallbackId] : [] },
         },
       },
     })
+
+    // setupDependencies reads the model selection reactively, so writing the
+    // config above already updates the local-backend dependency — just restart.
+    await effects.restart()
   },
 )

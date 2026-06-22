@@ -6,7 +6,6 @@ import { appendFile } from 'fs/promises'
 import { T } from '@start9labs/start-sdk'
 import { i18n } from '../i18n'
 
-
 const { InputSpec, Value } = sdk
 
 const inputSpec = InputSpec.of({
@@ -63,21 +62,20 @@ export const loginToOs = sdk.Action.withInput(
           user: 'root',
           env: { HOME: '/data', PASSWORD: input.masterPassword },
         })
-      }
+      },
     )
 
     if (result.exitCode !== 0) {
       throw new Error(
-        `Login failed: ${result.stderr || result.stdout || 'Unknown error'}`,
+        i18n('Login failed') +
+          `: ${result.stderr || result.stdout || i18n('Unknown error')}`,
       )
     }
 
     return {
       version: '1' as const,
       title: i18n('Login Successful'),
-      message: i18n(
-        'start-cli is now authenticated with your StartOS server.',
-      ),
+      message: i18n('start-cli is now authenticated with your StartOS server.'),
       result: null,
     }
   },

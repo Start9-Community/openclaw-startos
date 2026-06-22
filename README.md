@@ -35,15 +35,14 @@
 
 ## Security Warning
 
-**Use ONLY with EXTREME caution.**
+**Use with caution.** OpenClaw runs an LLM of your choosing that can execute commands on your behalf.
 
-- Do NOT install on a server containing important services or data
-- Do NOT install on a server with Bitcoin keys (LND, CLN, etc.)
-- OpenClaw uses an LLM that can execute commands based on your prompts
-- The AI can run destructive commands, uninstall services, or brick your server
-- Privacy concerns exist when using OpenAI or Anthropic APIs
+- On its own, OpenClaw is a chat agent with no access to your server. It gains that access only when you run **Login to StartOS**, which grants it root-equivalent control through the bundled `start-cli`.
+- Once granted, the agent can run destructive commands — uninstall services, change configuration — with no built-in confirmation step. Skip Login to StartOS if you want that guardrail.
+- Do NOT install on a server holding important data or keys (e.g. LND or CLN).
+- With a cloud AI provider, your prompts and context leave the device; choose a local backend (Ollama, vLLM, llama.cpp) to keep inference on your server.
 
-This package is intended for **development and experimentation only**.
+Best suited for **development and experimentation**.
 
 ## Image and Container Runtime
 
@@ -78,7 +77,7 @@ On install/update/restore:
 1. Creates directory structure (`.openclaw/agents`, `.openclaw/credentials`, `.openclaw/workspace`)
 2. Deploys workspace bootstrap files (SOUL.md, IDENTITY.md, HEARTBEAT.md, MEMORY.md — preserves existing MEMORY.md)
 3. If no password exists: creates **critical task** — "Set Password"
-4. If no API credentials exist: creates **critical task** — "Configure API Credentials"
+4. If no API credentials exist: creates **critical task** — "Configure AI Provider"
 
 On every startup:
 
@@ -97,9 +96,9 @@ On every startup, this package:
 | Setting | Value | Purpose |
 |---------|-------|---------|
 | `start-cli host` | StartOS IP address | Server management connection |
-| Gateway auth token | Random 22-character password | Web UI authentication |
-| Default model | `anthropic/claude-opus-4-6` | Primary LLM |
 | Heartbeat | Every 24h, target none | Agent heartbeat schedule |
+
+The gateway password and the AI provider/model are **not** auto-configured — they are set by the **Set Password** and **Configure AI Provider** actions (both critical tasks on first install).
 
 ### User-Configurable Settings
 
@@ -109,9 +108,9 @@ All configuration is done through Actions (see below).
 
 | Interface | Type | Port | Authentication | Description |
 |-----------|------|------|----------------|-------------|
-| Web UI | ui | 18789 | Token (query param) | Gateway control panel and WebChat |
+| Web UI | ui | 18789 | Password | Gateway control panel and WebChat |
 
-The interface URL includes the authentication token as a query parameter.
+Log in to the gateway with the password set via the **Set Password** action.
 
 ## Actions (StartOS UI)
 
@@ -129,7 +128,7 @@ The interface URL includes the authentication token as a query parameter.
 
 Sets or resets the gateway authentication password for the web UI. The action name dynamically changes to "Reset Password" if a password already exists.
 
-### Configure API Credentials
+### Configure AI Provider
 
 | Property | Value |
 |----------|-------|
@@ -139,10 +138,11 @@ Sets or resets the gateway authentication password for the web UI. The action na
 | Group | None |
 | Auto-created | Critical task if no credentials exist |
 
-**Input:** Primary provider (required) and optional fallback provider, each with:
-- Provider: Anthropic or OpenAI
-- Model selection (Anthropic: Opus 4.6, Sonnet 4.6, Opus 4.5, Sonnet 4.5, Haiku 4.5; OpenAI: GPT-4o, GPT-4o Mini, o3, o3 Mini)
-- Auth method: API Key or OAuth (Claude Pro/Max or ChatGPT Plus token)
+**Input:** Primary provider (required) and optional fallback provider. Each is either a cloud provider or a local backend:
+- **Cloud:** Anthropic (Claude), OpenAI (GPT), Google (Gemini), or xAI (Grok) — a per-provider model dropdown plus a **Custom Model** field for any id not listed, and the provider's **API Key** (masked; leave blank when reconfiguring to keep the saved key).
+- **Local:** Ollama, vLLM, or llama.cpp running on your StartOS server — enter the served model id. Selecting one flips it to a running dependency and wires its `.startos` endpoint automatically (vLLM's key is read from its published credentials). No cloud API key, so prompts stay on the device.
+
+The selected model is the default; change it anytime from Web UI chat with the `/model` command. Cloud keys are bridged to the gateway as the env vars OpenClaw reads (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`); local backends are written as `models.providers.<id>` entries in `openclaw.json` pointing at the package's `.startos` endpoint (Ollama via its native API, vLLM/llama.cpp OpenAI-compatible).
 
 ### Login to StartOS
 
@@ -184,13 +184,19 @@ Sets or resets the gateway authentication password for the web UI. The action na
 
 ## Dependencies
 
-None. OpenClaw on StartOS is standalone.
+All optional and gated by the **Configure AI Provider** selection — cloud providers need none. Selecting a local backend flips the matching package to a **running** dependency (`startos/dependencies.ts`):
+
+| Dependency | Version range | When required |
+|------------|---------------|---------------|
+| `ollama` | `>=0.21.0:0` | Backend set to Ollama |
+| `vllm` | `>=0.16.0:0.1` | Backend set to vLLM |
+| `llama-cpp` | `>=1.0.9544:0` | Backend set to llama.cpp |
 
 ## Backups and Restore
 
 **Included in backup:** The entire `main` volume — credentials, agent state, workspace, accumulated memories.
 
-**Restore behavior:** All data is restored. Critical tasks for Set Password and Configure API Credentials are re-created if credentials are missing (same as fresh install logic).
+**Restore behavior:** All data is restored. Critical tasks for Set Password and Configure AI Provider are re-created if credentials are missing (same as fresh install logic).
 
 ## Health Checks
 
@@ -206,7 +212,7 @@ None. OpenClaw on StartOS is standalone.
 2. **Synapse integration**: Matrix/Synapse bot user creation is implemented but disabled
 3. **Voice features**: Voice Wake and Talk Mode not available (requires companion apps)
 4. **Browser automation**: Limited without display access
-5. **Privacy**: All prompts sent to external AI providers (Anthropic/OpenAI)
+5. **Privacy**: With a cloud provider (Anthropic, OpenAI, Google, xAI), all prompts are sent to that provider. Choose a local backend (Ollama, vLLM, llama.cpp) to keep inference on your server.
 
 ## What Is Unchanged from Upstream
 
@@ -241,16 +247,21 @@ interfaces:
   ui:
     type: ui
     port: 18789
-    auth: token (query param)
+    auth: password (set via Set Password action)
     masked: false
 
 actions:
   - id: configure-api-credentials
-    name: Configure API Credentials
+    name: Configure AI Provider
     has_input: true
     providers:
-      - anthropic (claude-opus-4-6, claude-sonnet-4-6, claude-opus-4-5, claude-sonnet-4-5, claude-haiku-4-5)
-      - openai (gpt-4o, gpt-4o-mini, o3, o3-mini)
+      - anthropic (claude-opus-4-8, claude-opus-4-7, claude-sonnet-4-6, claude-haiku-4-5, claude-fable-5)
+      - openai (gpt-5.5, gpt-5.4, gpt-5.4-mini)
+      - google (gemini-3.1-pro-preview, gemini-3-flash-preview)
+      - xai (grok-4.3, grok-build-0.1)
+      - local: ollama, vllm, llama-cpp (served-model id; models.providers.<id> pointing at <id>.startos; ollama uses api=ollama, vllm/llama-cpp api=openai-completions)
+    custom_model_field: true
+    provider_key_envs: [ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, XAI_API_KEY]
   - id: set-password
     name: Set Password
     has_input: false
@@ -267,12 +278,14 @@ actions:
     has_input: true
     group: Channels
 
-dependencies: []
+dependencies: # optional; flipped to running by Configure AI Provider
+  ollama: ">=0.21.0:0"
+  vllm: ">=0.16.0:0.1"
+  llama-cpp: ">=1.0.9544:0"
 
 auto_configure:
   - start-cli host URL
-  - gateway auth token
-  - default model (claude-opus-4-6)
+  - heartbeat schedule (24h)
   - workspace bootstrap files
 
 health_checks:
@@ -282,8 +295,10 @@ health_checks:
     grace_period: 40000
 
 install_tasks:
-  - Login to StartOS (critical)
-  - Configure API Credentials (critical)
+  - Set Password (critical)
+  - Configure AI Provider (critical)
+startup_tasks:
+  - Login to StartOS (important, if start-cli is not authenticated)
 
 not_available:
   - voice_features
