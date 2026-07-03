@@ -68,7 +68,7 @@ export const loginToOs = sdk.Action.withInput(
     if (result.exitCode !== 0) {
       throw new Error(
         i18n('Login failed') +
-          `: ${result.stderr || result.stdout || i18n('Unknown error')}`,
+          `: ${String(result.stderr || result.stdout || i18n('Unknown error'))}`,
       )
     }
 
@@ -93,8 +93,9 @@ export async function installRootCA(
     '/usr/share/ca-certificates/startos-root-ca.crt',
     rootCa,
   )
+  const rootfs = await subcontainer.rootfs
   await appendFile(
-    `${subcontainer.rootfs}/etc/ca-certificates.conf`,
+    `${rootfs}/etc/ca-certificates.conf`,
     'startos-root-ca.crt\n',
   )
 

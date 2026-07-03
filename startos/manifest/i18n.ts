@@ -18,16 +18,3 @@ export const long = {
   fr_FR:
     "OpenClaw est un framework d'assistant personnel IA qui est local, rapide et toujours disponible. Il fournit un plan de contrôle unifié (Gateway) avec une interface de chat web, se connecte à plusieurs canaux de messagerie (Telegram et WhatsApp sur StartOS ; Slack, Discord, Signal et plus via configuration) et fonctionne avec une large gamme de fournisseurs d'IA — Anthropic Claude, OpenAI GPT, Google Gemini, xAI Grok et autres. Sur StartOS, il peut également gérer votre serveur via le start-cli intégré.",
 }
-
-export const installAlert = {
-  en_US:
-    'Use with caution. OpenClaw runs an LLM of your choosing that can execute commands on your behalf. Granting it start-cli access (the "Login to StartOS" action) gives it root-equivalent control of this server — it could run destructive commands or uninstall other services. Do NOT install on a server holding important data or keys (e.g. LND or CLN). When using a cloud AI provider, your prompts and context leave the device.',
-  es_ES:
-    'Use con precaución. OpenClaw ejecuta un LLM de su elección que puede ejecutar comandos en su nombre. Concederle acceso a start-cli (la acción "Iniciar sesión en StartOS") le da control equivalente a root de este servidor: podría ejecutar comandos destructivos o desinstalar otros servicios. NO lo instale en un servidor que contenga datos o claves importantes (p. ej. LND o CLN). Al usar un proveedor de IA en la nube, sus indicaciones y su contexto salen del dispositivo.',
-  de_DE:
-    'Mit Vorsicht verwenden. OpenClaw führt ein LLM Ihrer Wahl aus, das in Ihrem Namen Befehle ausführen kann. Wenn Sie ihm start-cli-Zugriff gewähren (die Aktion „Bei StartOS anmelden"), erhält es Root-äquivalente Kontrolle über diesen Server — es könnte destruktive Befehle ausführen oder andere Dienste deinstallieren. Installieren Sie es NICHT auf einem Server mit wichtigen Daten oder Schlüsseln (z. B. LND oder CLN). Bei Verwendung eines Cloud-KI-Anbieters verlassen Ihre Eingaben und Ihr Kontext das Gerät.',
-  pl_PL:
-    'Używaj ostrożnie. OpenClaw uruchamia wybrany przez Ciebie LLM, który może wykonywać polecenia w Twoim imieniu. Przyznanie mu dostępu do start-cli (akcja „Zaloguj się do StartOS") daje mu kontrolę równoważną rootowi nad tym serwerem — może uruchamiać destrukcyjne polecenia lub odinstalowywać inne usługi. NIE instaluj go na serwerze przechowującym ważne dane lub klucze (np. LND lub CLN). Podczas korzystania z chmurowego dostawcy AI Twoje zapytania i kontekst opuszczają urządzenie.',
-  fr_FR:
-    "À utiliser avec prudence. OpenClaw exécute un LLM de votre choix qui peut exécuter des commandes en votre nom. Lui accorder l'accès à start-cli (l'action « Se connecter à StartOS ») lui donne un contrôle équivalent à root sur ce serveur — il pourrait exécuter des commandes destructrices ou désinstaller d'autres services. N'installez PAS sur un serveur contenant des données ou des clés importantes (p. ex. LND ou CLN). Lorsque vous utilisez un fournisseur d'IA cloud, vos requêtes et votre contexte quittent l'appareil.",
-}

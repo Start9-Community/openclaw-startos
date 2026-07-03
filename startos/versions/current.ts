@@ -1,23 +1,13 @@
 import { VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '2026.6.11:0',
+  version: '2026.6.11:1',
   releaseNotes: {
-    en_US: `**Bumps**
-
-- OpenClaw → 2026.6.11`,
-    es_ES: `**Actualizaciones**
-
-- OpenClaw → 2026.6.11`,
-    de_DE: `**Aktualisierungen**
-
-- OpenClaw → 2026.6.11`,
-    pl_PL: `**Aktualizacje**
-
-- OpenClaw → 2026.6.11`,
-    fr_FR: `**Mises à jour**
-
-- OpenClaw → 2026.6.11`,
+    en_US: 'Internal updates (start-sdk 2.0.x)',
+    es_ES: 'Actualizaciones internas (start-sdk 2.0.x)',
+    de_DE: 'Interne Aktualisierungen (start-sdk 2.0.x)',
+    pl_PL: 'Aktualizacje wewnętrzne (start-sdk 2.0.x)',
+    fr_FR: 'Mises à jour internes (start-sdk 2.0.x)',
   },
   migrations: {
     up: async ({ effects }) => {},
