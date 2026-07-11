@@ -24,9 +24,7 @@ All commands use **positional arguments** for primary identifiers (package IDs, 
 - **`start-cli db dump /public/...`** — WRONG. `db dump` takes no path arguments. Dump to a file first, then filter: `start-cli db dump > /tmp/db_dump.json && jq '...' /tmp/db_dump.json`.
 - **`start-cli db dump | jq '...'`** — WRONG. Output is too large (~1-2MB) to pipe directly. Always dump to a file first, then run `jq` on the file.
 - **`start-cli net tor *`** — DOES NOT EXIST. Tor was removed from StartOS and is now a separate package (`tor-startos`).
-- **`start-cli init status`** — DOES NOT EXIST on CLI.
-- **`start-cli setup status`** — DOES NOT EXIST on CLI.
-- **`start-cli setup disk list`** — DOES NOT EXIST on CLI.
+- **`start-cli init status`** — DOES NOT EXIST on CLI. (`start-cli setup status` and `start-cli setup disk list`, however, **do** exist — they report the setup wizard's state during initial bring-up.)
 
 If a command fails, **do not retry with a guessed variation**. Instead, consult this documentation or run `start-cli <subcommand> --help`.
 
@@ -44,6 +42,12 @@ All commands accept these global options:
 | `-p, --proxy <PROXY>`            | Proxy configuration                           |
 | `--cookie-path <PATH>`           | Path to auth cookie                           |
 | `--developer-key-path <PATH>`    | Path to developer key                         |
+| `--root-ca <PEM_PATH>`           | PEM root CA(s) to trust for a self-signed StartOS cert (repeatable) — e.g. right after `setup complete`, before the device's CA is imported |
+| `--insecure`                     | Skip TLS verification entirely — bring-up only, never over the public internet |
+| `--s9pk-s3base <URL>`            | Base URL for publishing s9pks (packaging)     |
+| `--s9pk-s3bucket <BUCKET>`       | S3 bucket to publish s9pks to (packaging)     |
+
+> **`-H`/`-r` take a profile name _or_ a URL.** Inside a packaging workspace, `-H <name>` / `-r <name>` resolve to a named `host:` / `registry:` profile in the nearest `.startos/config.yaml` (walking up from the current directory); passing a full URL targets it directly. With no flag, the `default` profile is used. See **Package Development** below.
 
 ---
 
@@ -83,9 +87,10 @@ Create backups and manage backup targets.
 | ------------------------------------------------ | ----------------------------------------------- |
 | `start-cli backup create <TARGET_ID> <PASSWORD>` | Create backup of packages to a target           |
 | `start-cli backup target list`                   | List existing backup targets                    |
-| `start-cli backup target info <TARGET_ID>`       | Display package backup information for a target |
-| `start-cli backup target mount <TARGET_ID>`      | Mount a backup target                           |
+| `start-cli backup target info <TARGET_ID> <SERVER_ID> <PASSWORD>` | Display package backup info for a target       |
+| `start-cli backup target mount <TARGET_ID> <PASSWORD>` | Mount a backup target                     |
 | `start-cli backup target umount <TARGET_ID>`     | Unmount a backup target                         |
+| `start-cli backup target delete-legacy <TARGET_ID>` | Delete the legacy (V1) backup from a target  |
 | `start-cli backup target cifs add`               | Add a CIFS (network share) backup target        |
 | `start-cli backup target cifs remove`            | Remove a CIFS backup target                     |
 | `start-cli backup target cifs update`            | Update a CIFS backup target                     |
@@ -120,7 +125,7 @@ Interact with the StartOS **local** database. The database contains the state of
 | ------------------------------------------------- | -------------------------------------- |
 | `start-cli db dump`                               | Dump the public database as JSON       |
 | `start-cli db put ui <POINTER> <VALUE>`           | Add/update a UI record in the database |
-| `start-cli db apply --path <PATH> --value <JSON>` | Update a database record               |
+| `start-cli db apply <EXPR> [PATH]`                | Apply a patch expression to the database (`--allow-model-mismatch` bypasses schema validation) |
 
 ### Options for `db dump`
 
@@ -177,6 +182,7 @@ Available when the server is in diagnostic mode (e.g., after a failed boot).
 | `start-cli diagnostic kernel-logs` | Display kernel logs                     |
 | `start-cli diagnostic restart`     | Restart the server                      |
 | `start-cli diagnostic rebuild`     | Teardown and rebuild service containers |
+| `start-cli diagnostic update <REGISTRY>` | Check a registry for a StartOS update and apply it (recover a failed boot) |
 | `start-cli diagnostic disk repair` | Repair disk corruption                  |
 | `start-cli diagnostic disk forget` | Remove disk from filesystem             |
 
@@ -227,7 +233,7 @@ Note: `start-cli init status` does NOT exist on the CLI.
 
 ## net - Network Management
 
-Manage networking including Tor, DNS, gateways, tunnels, and certificates.
+Manage networking including DNS, gateways, tunnels, SSL certificates, and virtual hosts.
 
 ### ACME (SSL Certificate) Commands
 
@@ -235,6 +241,12 @@ Manage networking including Tor, DNS, gateways, tunnels, and certificates.
 | ----------------------------------------------------------------- | --------------------------------------- |
 | `start-cli net acme init --provider <PROVIDER> --contact <EMAIL>` | Setup automatic certificate acquisition |
 | `start-cli net acme remove --provider <PROVIDER>`                 | Remove ACME certificate configuration   |
+
+### SSL Commands
+
+| Command                                                  | Description                                   |
+| -------------------------------------------------------- | --------------------------------------------- |
+| `start-cli net ssl generate-certificate [HOSTNAMES]...`  | Generate a certificate from the system root CA (`--ed25519` for Ed25519 instead of P-256) |
 
 ### DNS Commands
 
@@ -257,22 +269,27 @@ Manage networking including Tor, DNS, gateways, tunnels, and certificates.
 | `start-cli net gateway list`                           | Show gateways StartOS can listen on        |
 | `start-cli net gateway set-name <GATEWAY> <NAME>`      | Rename a gateway                           |
 | `start-cli net gateway set-default-outbound <GATEWAY>` | Set default outbound gateway               |
-| `start-cli net gateway check-dns <GATEWAY>`            | Check DNS resolution through a gateway     |
-| `start-cli net gateway check-port <GATEWAY>`           | Check port accessibility through a gateway |
+| `start-cli net gateway check-dns <GATEWAY> <FQDN>`     | Check DNS resolution through a gateway     |
+| `start-cli net gateway check-port <PORT> <GATEWAY>`    | Check port accessibility through a gateway |
+| `start-cli net gateway check-port-v6 <PORT> <GATEWAY>` | Check IPv6 (GUA firewall) port reachability |
 | `start-cli net gateway forget <GATEWAY>`               | Forget a disconnected gateway              |
 
 ### Virtual Host Commands
 
-| Command                          | Description                           |
-| -------------------------------- | ------------------------------------- |
-| `start-cli net vhost dump-table` | Dump the SSL virtual host proxy table |
+| Command                                    | Description                           |
+| ------------------------------------------ | ------------------------------------- |
+| `start-cli net vhost dump-table`           | Dump the SSL virtual host proxy table |
+| `start-cli net vhost list-passthrough`     | List vhost passthroughs               |
+| `start-cli net vhost add-passthrough --hostname <H> --listen-port <P> --backend <B>` | Add a vhost passthrough |
+| `start-cli net vhost remove-passthrough`   | Remove a vhost passthrough            |
 
 ### Tunnel Commands
 
-| Command                       | Description             |
-| ----------------------------- | ----------------------- |
-| `start-cli net tunnel add`    | Add a network tunnel    |
-| `start-cli net tunnel remove` | Remove a network tunnel |
+| Command                              | Description                                          |
+| ------------------------------------ | ---------------------------------------------------- |
+| `start-cli net tunnel add`           | Add a network tunnel                                 |
+| `start-cli net tunnel update <ID> <CONFIG>` | Replace a gateway's WireGuard config in place, keeping its identity |
+| `start-cli net tunnel remove`        | Remove a network tunnel                              |
 
 ### Examples
 
@@ -336,7 +353,7 @@ Note: There is no `start-cli package list-updates`, `start-cli package health`, 
 | --------------------------------------------- | ---------------------------------------------- |
 | `start-cli package list`                      | List all installed packages                    |
 | `start-cli package install <ID> [VERSION]`    | Install a package from the configured registry |
-| `start-cli package install --sideload <PATH>` | Install from a local .s9pk file                |
+| `start-cli package install -s <PATH>`         | Sideload from a local .s9pk file (`-s`/`--sideload`) |
 | `start-cli package uninstall <ID>`            | Remove a package                               |
 | `start-cli package cancel-install <ID>`       | Cancel an in-progress installation             |
 | `start-cli package installed-version <ID>`    | Display installed version of a package         |
@@ -391,24 +408,30 @@ Note: There is no `start-cli package list-updates`, `start-cli package health`, 
 | Command                                                        | Description                               |
 | -------------------------------------------------------------- | ----------------------------------------- |
 | `start-cli package action get-input <PKG_ID> <ACTION_ID>`      | Get the input specification for an action |
-| `start-cli package action run <PKG_ID> [EVENT_ID] <ACTION_ID>` | Run a service action (input via stdin)    |
-| `start-cli package action clear-task <PKG_ID> <ACTION_ID>`     | Clear a service task                      |
+| `start-cli package action run <PKG_ID> <ACTION_ID> [--event-id <EVENT_ID>]` | Run a service action (input via stdin) |
+| `start-cli package action clear-task <PKG_ID> <REPLAY_ID>`     | Clear a service task by replay id         |
 
 ### Backup and Restore
 
 | Command                                                                | Description                             |
 | ---------------------------------------------------------------------- | --------------------------------------- |
-| `start-cli package backup restore <PKG_IDS>... <TARGET_ID> <PASSWORD>` | Restore package(s) from a backup target |
+| `start-cli package backup restore <TARGET_ID> <PASSWORD> [PKG_IDS]...` | Restore package(s) from a backup target |
 
 ### Host Management
 
-| Command                                | Description                            |
-| -------------------------------------- | -------------------------------------- |
-| `start-cli package host list <ID>`     | List network host IDs for a package    |
-| `start-cli package host address`       | Manage network addresses for a package |
-| `start-cli package host binding list`  | List network bindings for a package    |
-| `start-cli package host binding set`   | Set a network binding for a package    |
-| `start-cli package host binding clear` | Clear a network binding for a package  |
+The host commands take the package id first, then the host id: `start-cli package host <PKG> <address|binding> <HOST> <subcommand>`.
+
+| Command                                                                        | Description                                     |
+| ------------------------------------------------------------------------------ | ----------------------------------------------- |
+| `start-cli package host <PKG> address <HOST> list`                             | List addresses for a host                       |
+| `start-cli package host <PKG> address <HOST> domain public`                    | Manage a host's public domain address           |
+| `start-cli package host <PKG> address <HOST> domain private`                   | Manage a host's private domain address          |
+| `start-cli package host <PKG> binding <HOST> list`                             | List bindings for a host                        |
+| `start-cli package host <PKG> binding <HOST> set-address-enabled --address <A> <PORT>` | Enable/disable a gateway address for a binding |
+| `start-cli package host <PKG> binding <HOST> set-gua-wan`                       | Expose (or revert) an IPv6 GUA address to the WAN |
+| `start-cli package host <PKG> binding <HOST> set-range-address-enabled`         | Enable/disable a gateway address for a port-range binding |
+
+> There is no `package host list`, `package host binding set`, or `package host binding clear` — use the address/binding subcommands above.
 
 ### Examples
 
@@ -423,7 +446,7 @@ start-cli package install bitcoin
 start-cli package install bitcoin ">=0.1.0"
 
 # Sideload a local package
-start-cli package install --sideload ./mypackage.s9pk
+start-cli package install -s ./mypackage.s9pk
 
 # Start a service
 start-cli package start bitcoin
@@ -495,11 +518,13 @@ Then use each registry URL with the `--registry` flag to query **registry** comm
 | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | `start-cli -r <URL> registry package get [ID]`                | List all available packages, or get details for a specific package by ID |
 | `start-cli -r <URL> registry package index`                   | List all packages in the registry                                        |
-| `start-cli -r <URL> registry package add --s9pk <FILE>`       | Add/publish a package to the registry                                    |
+| `start-cli -r <URL> registry package add <FILE>`              | Add/publish a package — positional s9pk path (`--url`, `--no-verify`)    |
 | `start-cli -r <URL> registry package remove <ID>`             | Remove a package from the registry                                       |
 | `start-cli -r <URL> registry package download <ID>`           | Download an s9pk file                                                    |
+| `start-cli -r <URL> registry package promote <ID> <VERSION> --from <URL> --to <URL>` | Promote a package from one registry to another        |
 | `start-cli -r <URL> registry package category list`           | List package categories                                                  |
 | `start-cli -r <URL> registry package category add`            | Add a category                                                           |
+| `start-cli -r <URL> registry package category remove`         | Remove a category                                                        |
 | `start-cli -r <URL> registry package category add-package`    | Add a package to a category                                              |
 | `start-cli -r <URL> registry package category remove-package` | Remove a package from a category                                         |
 | `start-cli -r <URL> registry package signer add`              | Add a package signer                                                     |
@@ -513,6 +538,7 @@ Then use each registry URL with the `--registry` flag to query **registry** comm
 | Command                                                | Description                 |
 | ------------------------------------------------------ | --------------------------- |
 | `start-cli -r <URL> registry os index`                 | List OS version index       |
+| `start-cli -r <URL> registry os promote <VERSION> --from <URL> --to <URL>` | Promote an OS version between registries |
 | `start-cli -r <URL> registry os version get`           | Get available OS versions   |
 | `start-cli -r <URL> registry os version add`           | Add an OS version           |
 | `start-cli -r <URL> registry os version remove`        | Remove an OS version        |
@@ -521,7 +547,9 @@ Then use each registry URL with the `--registry` flag to query **registry** comm
 | `start-cli -r <URL> registry os version signer list`   | List OS version signers     |
 | `start-cli -r <URL> registry os asset add`             | Add an OS asset             |
 | `start-cli -r <URL> registry os asset remove`          | Remove an OS asset          |
-| `start-cli -r <URL> registry os asset get`             | Get an OS asset             |
+| `start-cli -r <URL> registry os asset get img <VERSION> <PLATFORM>`      | Download an OS IMG asset      |
+| `start-cli -r <URL> registry os asset get iso <VERSION> <PLATFORM>`      | Download an OS ISO asset      |
+| `start-cli -r <URL> registry os asset get squashfs <VERSION> <PLATFORM>` | Download an OS squashfs (pairs with `flash-os`) |
 | `start-cli -r <URL> registry os asset sign`            | Sign an OS asset            |
 
 ### Admin Commands
@@ -534,6 +562,15 @@ Then use each registry URL with the `--registry` flag to query **registry** comm
 | `start-cli -r <URL> registry admin signer list` | List admin signers   |
 | `start-cli -r <URL> registry admin signer add`  | Add an admin signer  |
 | `start-cli -r <URL> registry admin signer edit` | Edit an admin signer |
+| `start-cli -r <URL> registry admin signer remove` | Remove an admin signer and their authorizations |
+
+### Metrics Commands
+
+| Command                                        | Description                                    |
+| ---------------------------------------------- | ---------------------------------------------- |
+| `start-cli -r <URL> registry metrics summary`  | Summary of registry usage metrics              |
+| `start-cli -r <URL> registry metrics downloads`| Count package download requests (with filters) |
+| `start-cli -r <URL> registry metrics users`    | Count unique active users within a time range  |
 
 ### Registry Database Commands
 
@@ -565,46 +602,99 @@ start-cli -r https://registry.start9.com registry info
 
 ## s9pk - Package Development
 
-Create, inspect, and convert s9pk package files.
+Build, scaffold, inspect, convert, and publish `.s9pk` service packages.
 
-### Commands
+### The modern paradigm: workspace-first, guide-driven
 
-| Command                                   | Description                            |
-| ----------------------------------------- | -------------------------------------- |
-| `start-cli s9pk pack [PATH]`              | Package input files into a valid s9pk  |
-| `start-cli s9pk convert <S9PK>`           | Convert s9pk from v1 to v2 format      |
-| `start-cli s9pk edit <S9PK> add-image`    | Add an image to an s9pk                |
-| `start-cli s9pk edit <S9PK> manifest`     | Edit an s9pk manifest                  |
-| `start-cli s9pk inspect <S9PK> manifest`  | Display the s9pk manifest              |
-| `start-cli s9pk inspect <S9PK> file-tree` | Display list of file paths in the s9pk |
-| `start-cli s9pk inspect <S9PK> cat`       | Display file contents from the s9pk    |
-| `start-cli s9pk list-ingredients`         | List paths of package ingredients      |
+StartOS packaging is done inside a **packaging workspace** and is designed to be driven by an AI assistant. You do **not** hand-assemble a package or run `s9pk pack` by hand as a first step — two scaffolding commands set everything up:
+
+| Command                                        | Description                                                          |
+| ---------------------------------------------- | -------------------------------------------------------------------- |
+| `start-cli s9pk init-workspace [PATH]`         | Create/initialize a packaging workspace (default: current directory) |
+| `start-cli s9pk init-package "<Name>"`         | Scaffold a new package from the workspace template (run inside a workspace) |
+
+**`init-workspace`** clones the Start9 monorepo into `start-technologies/` (the packaging **guide** plus the SDK and OS source), writes the agent-context files (`AGENTS.md` → the guide's Agent Context page, your own `AGENTS.local.md`, and a `CLAUDE.md` that loads both), and creates a `.startos/` directory that marks the workspace and holds your **build-key** (signs your packages) and a `config.yaml` of named `host:` / `registry:` profiles. The resulting layout:
+
+```
+start9-workspace/
+├── .startos/              ← build-key (signs packages) + config.yaml (hosts, registries)
+├── AGENTS.md              ← agent context (read automatically by AI assistants)
+├── AGENTS.local.md        ← your own notes, preserved across guide updates
+├── CLAUDE.md              ← loads AGENTS.md + AGENTS.local.md
+├── start-technologies/    ← the monorepo: the guide, the SDK source, the OS source
+└── <id>-startos/ …        ← your package repos live here
+```
+
+**`init-package "Hello World"`** normalizes the name to an id, creates `hello-world-startos/` from the bundled template (a barebones, buildable Hello World), runs `npm install`, and leaves a **`TODO.md` checklist** that takes the package from clone to release-ready. Work the `TODO.md` top to bottom.
+
+Prerequisites (a developer workstation, not the StartOS server): Docker (running), Node.js v22+, `make`, `git`, `jq`, `squashfs-tools`, and `start-cli` itself. The guide's **Environment Setup** page lists them.
+
+Packages target the **`@start9labs/start-sdk` 2.0+** TypeScript SDK; the shared build logic (`s9pk.mk`) ships inside that package, so a package `Makefile` just `include`s it.
+
+### The packaging guide (read this, don't guess)
+
+The full packaging documentation is the mdBook at **<https://docs.start9.com/packaging>** — and, inside a workspace, on disk at `start-technologies/projects/start-sdk/docs/src/`. It is **recipe-driven**: start from an intent in `recipes.md`, follow its reference-page and real-package links. The always-on `AGENTS.md` at the workspace root maps where to read for any task. When asked how to package something, consult the guide rather than inventing SDK APIs.
+
+### Building & installing a package
+
+Build and install are `make` targets (not raw `s9pk` subcommands) — they sign with the workspace build-key and resolve the target device from `.startos/config.yaml`:
+
+| Command             | Description                                                        |
+| ------------------- | ----------------------------------------------------------------- |
+| `make x86` / `make arm` / `make riscv` | Build for one architecture (fast path for development) |
+| `make` / `make all` | Build for all architectures (for publishing)                      |
+| `make universal`    | Build one multi-arch package                                      |
+| `make install`      | Install the most recent `.s9pk` to your StartOS device (`host.default`, or `-H <profile\|url>`) |
+| `make x86 install`  | Build then install in one step — the normal dev loop              |
+
+As of `@start9labs/start-sdk` 2.0, `make install` / `make publish` resolve their target through `start-cli` (the workspace `.startos/config.yaml` profiles, or `-H` / `-r`) — superseding the old single-URL `~/.startos/config.yaml`. The old global `~/.startos` + `start-cli init-key` developer key is **not** how packages are signed now — the per-workspace `.startos/build-key` is.
+
+### Raw s9pk commands
+
+| Command                                   | Description                                     |
+| ----------------------------------------- | ----------------------------------------------- |
+| `start-cli s9pk pack [PATH]`              | Package input files into a valid s9pk           |
+| `start-cli s9pk publish <S9PK>`           | Publish an s9pk to S3 and index it on a registry |
+| `start-cli s9pk select [S9PKS]...`        | Select the best compatible s9pk for a target device |
+| `start-cli s9pk convert <S9PK>`           | Convert an s9pk from v1 to v2 format            |
+| `start-cli s9pk edit <S9PK> add-image`    | Add an image to an s9pk                         |
+| `start-cli s9pk edit <S9PK> manifest`     | Edit an s9pk manifest                           |
+| `start-cli s9pk inspect <S9PK> manifest`  | Display the s9pk manifest                       |
+| `start-cli s9pk inspect <S9PK> file-tree` | Display list of file paths in the s9pk          |
+| `start-cli s9pk inspect <S9PK> cat`       | Display file contents from the s9pk             |
+| `start-cli s9pk inspect <S9PK> commitment`| Display the s9pk root signature hash and max size |
+| `start-cli s9pk list-ingredients`         | List paths of package ingredients               |
 
 ### Pack Options
 
-| Option                      | Description              |
-| --------------------------- | ------------------------ |
-| `-o, --output <OUTPUT>`     | Output path              |
-| `--javascript <JAVASCRIPT>` | Path to JavaScript file  |
-| `--icon <ICON>`             | Path to icon file        |
-| `--license <LICENSE>`       | Path to license file     |
-| `--assets <ASSETS>`         | Path to assets directory |
-| `--no-assets`               | Exclude assets           |
-| `--arch <ARCH>`             | Architecture mask        |
+| Option                            | Description                              |
+| --------------------------------- | ---------------------------------------- |
+| `-o, --output <OUTPUT>`           | Output path                              |
+| `--javascript <JAVASCRIPT>`       | Path to JavaScript file                  |
+| `--icon <ICON>`                   | Path to icon file                        |
+| `--license <LICENSE>`             | Path to license file                     |
+| `--instructions <INSTRUCTIONS>`   | Path to user-facing instructions markdown |
+| `--assets <ASSETS>`               | Path to assets directory                 |
+| `--no-assets`                     | Exclude assets                           |
+| `--arch <ARCH>`                   | Architecture mask                        |
 
 ### Examples
 
 ```bash
-# Pack a project into s9pk
-start-cli s9pk pack ./my-project -o my-package.s9pk
+# Create a packaging workspace, then scaffold a package inside it
+start-cli s9pk init-workspace start9-workspace
+cd start9-workspace
+start-cli s9pk init-package "Hello World"
 
-# Inspect a package manifest
-start-cli s9pk inspect my-package.s9pk manifest
+# Build and install to your StartOS device (host.default from .startos/config.yaml)
+cd hello-world-startos
+make x86 install
 
-# List files in a package
-start-cli s9pk inspect my-package.s9pk file-tree
+# Inspect a built package
+start-cli s9pk inspect hello-world_x86_64.s9pk manifest
+start-cli s9pk inspect hello-world_x86_64.s9pk file-tree
 
-# Convert v1 to v2
+# Convert a v1 package to v2
 start-cli s9pk convert old-package.s9pk
 ```
 
@@ -621,6 +711,7 @@ Note: There is no `start-cli server check-update` command. To check for updates,
 | Command                        | Description                                          |
 | ------------------------------ | ---------------------------------------------------- |
 | `start-cli server metrics`     | Display server metrics (CPU, RAM, disk, temperature) |
+| `start-cli server device-info` | Display device information                            |
 | `start-cli server time`        | Display current time and server uptime               |
 | `start-cli server logs`        | Display OS system logs                               |
 | `start-cli server kernel-logs` | Display kernel logs                                  |
@@ -634,7 +725,8 @@ Note: There is no `start-cli server check-update` command. To check for updates,
 | `start-cli server rebuild`               | Teardown and rebuild all service containers |
 | `start-cli server update <REGISTRY_URL>` | Check for and apply StartOS updates         |
 | `start-cli server update-firmware`       | Update mainboard firmware                   |
-| `start-cli server set-ifconfig-url`      | Set the URL used for external IP detection  |
+| `start-cli server set-echoip-urls [URLS]...` | Set the Echo IP service URLs for external IP detection |
+| `start-cli server set-hostname [NAME] [HOSTNAME]` | Set the server hostname                |
 
 ### Update Options
 
@@ -645,18 +737,21 @@ Note: There is no `start-cli server check-update` command. To check for updates,
 
 ### Host Management
 
-| Command                         | Description                        |
-| ------------------------------- | ---------------------------------- |
-| `start-cli server host address` | Manage addresses for the system UI |
-| `start-cli server host binding` | Manage bindings for the system UI  |
+The system-UI host mirrors the `package host` tree (same `address` / `binding` subcommands) but with no `<PKG>` argument: `start-cli server host <address|binding> <HOST> <subcommand>`.
+
+| Command                                             | Description                            |
+| --------------------------------------------------- | -------------------------------------- |
+| `start-cli server host address <HOST> list`         | List addresses for the system-UI host  |
+| `start-cli server host binding <HOST> list`         | List bindings for the system-UI host   |
+| `start-cli server host binding <HOST> set-address-enabled` / `set-gua-wan` / `set-range-address-enabled` | Manage a system-UI binding |
 
 ### SMTP Configuration
 
 | Command                                                                                 | Description               |
 | --------------------------------------------------------------------------------------- | ------------------------- |
-| `start-cli server set-smtp --server <HOST> --port <PORT> --from <EMAIL> --login <USER>` | Configure SMTP            |
+| `start-cli server set-smtp --host <HOST> --port <PORT> --from <EMAIL> --username <USER> --security <starttls\|tls> [--password <PASS>]` | Configure SMTP |
 | `start-cli server clear-smtp`                                                           | Remove SMTP configuration |
-| `start-cli server test-smtp`                                                            | Send a test email         |
+| `start-cli server test-smtp --host <HOST> --port <PORT> --from <EMAIL> --to <EMAIL> --username <USER> --password <PASS> --security <starttls\|tls>` | Send a test email (all flags required) |
 
 ### Localization
 
@@ -679,7 +774,7 @@ Note: There is no `start-cli server check-update` command. To check for updates,
 | Command                                              | Description                        |
 | ---------------------------------------------------- | ---------------------------------- |
 | `start-cli server experimental governor [GOVERNOR]`  | Show or set CPU governor           |
-| `start-cli server experimental zram --enable <BOOL>` | Enable or disable ZRAM compression |
+| `start-cli server experimental zram [--enable]`      | Enable ZRAM compression (bare `--enable` flag; omit to disable) |
 
 ### Examples
 
@@ -700,10 +795,10 @@ start-cli server update https://registry.start9.com
 start-cli server update https://registry.start9.com --to 0.4.0
 
 # Configure SMTP for email notifications
-start-cli server set-smtp --server smtp.example.com --port 587 --from admin@example.com --login admin
+start-cli server set-smtp --host smtp.example.com --port 587 --from admin@example.com --username admin --security starttls
 
-# Send a test email
-start-cli server test-smtp
+# Send a test email (all connection flags are required)
+start-cli server test-smtp --host smtp.example.com --port 587 --from admin@example.com --to you@example.com --username admin --password '<password>' --security starttls
 
 # Restart the server
 start-cli server restart
@@ -713,16 +808,24 @@ start-cli server restart
 
 ## setup - Setup Commands
 
-Commands available during initial server setup.
+Commands available during initial server bring-up (before `setup complete`). A server that has finished setup won't need these.
 
-| Command                       | Description                      |
-| ----------------------------- | -------------------------------- |
-| `start-cli setup logs`        | Display setup logs               |
-| `start-cli setup cifs add`    | Add a CIFS share during setup    |
-| `start-cli setup cifs update` | Update a CIFS share during setup |
-| `start-cli setup cifs remove` | Remove a CIFS share during setup |
+| Command                       | Description                                       |
+| ----------------------------- | ------------------------------------------------- |
+| `start-cli setup status`      | Display the current state of the setup wizard     |
+| `start-cli setup disk list`   | List disks available for installation             |
+| `start-cli setup logs`        | Display setup/OS logs                             |
+| `start-cli setup cifs`        | Manage a CIFS share during setup                  |
+| `start-cli setup execute`     | Run the initial setup against an installed OS or fresh data drive |
+| `start-cli setup complete`    | Finalize setup and persist disk identifiers       |
+| `start-cli setup attach`      | Attach an existing StartOS data drive without re-running setup |
+| `start-cli setup install-os`  | Install StartOS to a disk over the network        |
+| `start-cli setup exit`        | Exit setup mode and reboot into the installed OS  |
+| `start-cli setup restart` / `shutdown` | Restart / shut down the device from setup mode |
+| `start-cli setup set-language <CODE>` / `set-keyboard <LAYOUT>` | Set language / keyboard during setup |
+| `start-cli setup get-pubkey`  | Get the server's public key                       |
 
-Note: `start-cli setup status` and `start-cli setup disk list` do NOT exist on the CLI.
+Note: `start-cli setup status` and `start-cli setup disk list` **do** exist (they report the wizard's state during bring-up). Only `start-cli init status` does not exist.
 
 ---
 
@@ -753,7 +856,7 @@ start-cli ssh remove "SHA256:abc123..."
 
 ## tunnel - StartTunnel Management
 
-Manage StartTunnel for remote access via VPN-like tunnels. Tunnel commands require the `-t` / `--tunnel` global flag.
+Manage StartTunnel for remote access via VPN-like tunnels. Tunnel commands require the `-t` / `--tunnel` global flag. The surface is large; the most useful groups are below — run `start-cli tunnel <group> --help` for the rest.
 
 ### Auth Commands
 
@@ -761,6 +864,7 @@ Manage StartTunnel for remote access via VPN-like tunnels. Tunnel commands requi
 | -------------------------------------- | -------------------------- |
 | `start-cli tunnel auth login`          | Log in to the tunnel       |
 | `start-cli tunnel auth logout`         | Log out of the tunnel      |
+| `start-cli tunnel auth get-pubkey`     | Get the tunnel public key  |
 | `start-cli tunnel auth session list`   | List tunnel auth sessions  |
 | `start-cli tunnel auth session kill`   | Kill a tunnel auth session |
 | `start-cli tunnel auth set-password`   | Set tunnel password        |
@@ -771,40 +875,72 @@ Manage StartTunnel for remote access via VPN-like tunnels. Tunnel commands requi
 
 ### Device Commands
 
-| Command                          | Description            |
-| -------------------------------- | ---------------------- |
-| `start-cli tunnel device add`    | Add device to a subnet |
-| `start-cli tunnel device remove` | Remove a device        |
-| `start-cli tunnel device list`   | List devices           |
+| Command                                        | Description                        |
+| ---------------------------------------------- | ---------------------------------- |
+| `start-cli tunnel device add`                  | Add device to a subnet             |
+| `start-cli tunnel device remove`               | Remove a device                    |
+| `start-cli tunnel device list`                 | List devices                       |
+| `start-cli tunnel device show-config`          | Show a device's WireGuard config   |
+| `start-cli tunnel device set-wan`              | Set a device's WAN                 |
+| `start-cli tunnel device set-kind`             | Set a device's kind                |
+| `start-cli tunnel device set-dns-injection`    | Toggle DNS injection for a device  |
+| `start-cli tunnel device set-auto-port-forward`| Toggle auto port-forwarding        |
 
 ### Subnet Commands
 
-| Command                                   | Description      |
-| ----------------------------------------- | ---------------- |
-| `start-cli tunnel subnet <SUBNET> add`    | Add a new subnet |
-| `start-cli tunnel subnet <SUBNET> remove` | Remove a subnet  |
+| Command                            | Description                 |
+| ---------------------------------- | --------------------------- |
+| `start-cli tunnel subnet add`      | Add a new subnet            |
+| `start-cli tunnel subnet remove`   | Remove a subnet             |
+| `start-cli tunnel subnet set-dns`  | Set the subnet's DNS        |
+| `start-cli tunnel subnet set-ipv6` | Set the subnet's IPv6       |
+| `start-cli tunnel subnet set-wan`  | Set the subnet's WAN        |
 
-### Port Forwarding
+### DNS Commands
 
-| Command                                | Description                 |
-| -------------------------------------- | --------------------------- |
-| `start-cli tunnel port-forward add`    | Add port forwarding rule    |
-| `start-cli tunnel port-forward remove` | Remove port forwarding rule |
+| Command                       | Description         |
+| ----------------------------- | ------------------- |
+| `start-cli tunnel dns add`    | Add a DNS record    |
+| `start-cli tunnel dns list`   | List DNS records    |
+| `start-cli tunnel dns remove` | Remove a DNS record |
 
-### Database Commands
+### Port Forwarding & Pinholes
 
-| Command                     | Description                      |
-| --------------------------- | -------------------------------- |
-| `start-cli tunnel db dump`  | Dump tunnel database             |
-| `start-cli tunnel db apply` | Apply changes to tunnel database |
+| Command                                     | Description                       |
+| ------------------------------------------- | --------------------------------- |
+| `start-cli tunnel port-forward add`         | Add a port forwarding rule        |
+| `start-cli tunnel port-forward remove`      | Remove a port forwarding rule     |
+| `start-cli tunnel port-forward set-enabled` | Enable/disable a port forward     |
+| `start-cli tunnel port-forward update-label`| Relabel a port forward            |
+| `start-cli tunnel pinhole add`              | Add a firewall pinhole            |
+| `start-cli tunnel pinhole remove`           | Remove a pinhole                  |
+| `start-cli tunnel pinhole set-enabled`      | Enable/disable a pinhole          |
+| `start-cli tunnel pinhole update-label`     | Relabel a pinhole                 |
+| `start-cli tunnel http-redirect list`       | List HTTP→HTTPS redirects         |
+| `start-cli tunnel http-redirect set-enabled`| Toggle an HTTP redirect           |
+
+### Update, Restart & Database
+
+| Command                          | Description                         |
+| -------------------------------- | ----------------------------------- |
+| `start-cli tunnel update check`  | Check for a StartTunnel update      |
+| `start-cli tunnel update apply`  | Apply a StartTunnel update          |
+| `start-cli tunnel restart`       | Restart StartTunnel                 |
+| `start-cli tunnel db dump`       | Dump tunnel database                |
+| `start-cli tunnel db apply`      | Apply changes to tunnel database    |
 
 ### Web Commands
 
-| Command                           | Description                     |
-| --------------------------------- | ------------------------------- |
-| `start-cli tunnel web init`       | Initialize tunnel web interface |
-| `start-cli tunnel web set-listen` | Set tunnel web listen address   |
-| `start-cli tunnel web get-listen` | Get tunnel web listen address   |
+| Command                                  | Description                        |
+| ---------------------------------------- | ---------------------------------- |
+| `start-cli tunnel web init` / `uninit`   | Initialize / tear down the web UI  |
+| `start-cli tunnel web enable` / `disable`| Enable / disable the web UI        |
+| `start-cli tunnel web set-listen`        | Set tunnel web listen address      |
+| `start-cli tunnel web get-listen`        | Get tunnel web listen address      |
+| `start-cli tunnel web get-available-ips` | List IPs the web UI can bind       |
+| `start-cli tunnel web generate-certificate` | Generate a web TLS certificate  |
+| `start-cli tunnel web get-certificate`   | Get the current web certificate    |
+| `start-cli tunnel web import-certificate`| Import a web TLS certificate       |
 
 ---
 
@@ -836,7 +972,7 @@ Manage WiFi networks. SSIDs and passwords are positional arguments.
 | `start-cli wifi add <SSID> <PASSWORD>`      | Add a WiFi network                   |
 | `start-cli wifi connect <SSID>`             | Connect to a saved WiFi network      |
 | `start-cli wifi remove <SSID>`              | Remove a saved WiFi network          |
-| `start-cli wifi set-enabled <true\|false>`  | Enable or disable WiFi               |
+| `start-cli wifi set-enabled [--enabled]`    | Enable/disable WiFi (bare `--enabled` flag; omit to disable) |
 | `start-cli wifi country set <COUNTRY_CODE>` | Set WiFi country code                |
 
 ### Examples
@@ -852,8 +988,8 @@ start-cli wifi available get
 start-cli wifi add "MyNetwork" "mypassword"
 start-cli wifi connect "MyNetwork"
 
-# Disable WiFi
-start-cli wifi set-enabled false
+# Enable WiFi (omit --enabled to disable)
+start-cli wifi set-enabled --enabled
 
 # Set country code
 start-cli wifi country set US
@@ -868,7 +1004,8 @@ start-cli wifi country set US
 | `start-cli echo <MESSAGE>` | Echo a message (for testing)                           |
 | `start-cli git-info`       | Display the git hash / version of StartOS              |
 | `start-cli state`          | Display the API state (Error / Initializing / Running) |
-| `start-cli init-key`       | Create developer key if it doesn't exist               |
+| `start-cli flash-os <SQUASHFS> <DISK>` | Flash a StartOS squashfs image to a drive (`--efi true\|false`) |
+| `start-cli init-key`       | Create a legacy global developer key — superseded by the per-workspace `.startos/build-key` for packaging |
 | `start-cli pubkey`         | Get public key for developer private key               |
 | `start-cli init subscribe` | Subscribe to initialization progress                   |
 
@@ -1025,20 +1162,31 @@ start-cli package start bitcoin
 start-cli package logs bitcoin --follow
 ```
 
-### Development Workflow
+### Development Workflow (packaging a service)
+
+Packaging is workspace-first — scaffold, then work the generated `TODO.md` with the packaging guide (<https://docs.start9.com/packaging>). See **s9pk - Package Development** above.
 
 ```bash
-# Initialize developer key
-start-cli init-key
+# 1. Create an AI-ready packaging workspace (clones the guide + SDK/OS source, makes a build-key)
+start-cli s9pk init-workspace start9-workspace
+cd start9-workspace
 
-# Pack your project
-start-cli s9pk pack ./my-project -o my-package.s9pk
+# 2. Scaffold a new package (Hello World clone + TODO.md checklist), then work the TODO
+start-cli s9pk init-package "My Service"
+cd my-service-startos
 
-# Sideload to test server
-start-cli -H https://test-server.local package install --sideload ./my-package.s9pk
+# 3. Point the workspace at your StartOS device, then log in once
+#    (edit .startos/config.yaml host.default), then:
+start-cli auth login
 
-# Monitor the package
-start-cli package logs my-package --follow
+# 4. Build and install to the device in one step (repeat on every change)
+make x86 install        # or: make arm install
+
+# 5. Monitor the running package
+start-cli package logs my-service --follow
+
+# Sideloading a prebuilt .s9pk directly still works:
+start-cli -H https://test-server.local package install -s ./my-service_x86_64.s9pk
 ```
 
 ### Troubleshooting a Service
