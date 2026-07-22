@@ -1,18 +1,33 @@
 import { VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '2026.6.11:2',
+  version: '2026.7.1:0',
   releaseNotes: {
-    en_US:
-      'Updated the bundled GitHub CLI (`gh`) to 2.96.0, which the OpenClaw agent uses for repository work. OpenClaw itself is unchanged and remains on 2026.6.11.',
-    es_ES:
-      'Actualiza la CLI de GitHub (`gh`) incluida a la versión 2.96.0, que el agente de OpenClaw utiliza para trabajar con repositorios. OpenClaw en sí no cambia y se mantiene en la versión 2026.6.11.',
-    de_DE:
-      'Aktualisiert die mitgelieferte GitHub-CLI (`gh`) auf 2.96.0, die der OpenClaw-Agent für die Arbeit mit Repositories verwendet. OpenClaw selbst bleibt unverändert bei 2026.6.11.',
-    pl_PL:
-      'Aktualizuje dołączone narzędzie GitHub CLI (`gh`) do wersji 2.96.0, z którego agent OpenClaw korzysta przy pracy z repozytoriami. Sam OpenClaw pozostaje bez zmian w wersji 2026.6.11.',
-    fr_FR:
-      "Met à jour l'interface en ligne de commande GitHub (`gh`) incluse vers la version 2.96.0, utilisée par l'agent OpenClaw pour travailler sur les dépôts. OpenClaw lui-même reste inchangé, en version 2026.6.11.",
+    en_US: `Updated OpenClaw to 2026.7.1.
+
+This release also migrates the package to start-sdk 2.0 (requires StartOS 0.4.0-beta.10 or later).
+
+See https://openclaw.bot for release details.`,
+    es_ES: `Actualiza OpenClaw a 2026.7.1.
+
+Esta versión también migra el paquete a start-sdk 2.0 (requiere StartOS 0.4.0-beta.10 o posterior).
+
+Consulta https://openclaw.bot para conocer los detalles de la versión.`,
+    de_DE: `Aktualisiert OpenClaw auf 2026.7.1.
+
+Diese Version stellt das Paket außerdem auf start-sdk 2.0 um (erfordert StartOS 0.4.0-beta.10 oder neuer).
+
+Weitere Informationen zur Version unter https://openclaw.bot.`,
+    pl_PL: `Aktualizuje OpenClaw do 2026.7.1.
+
+Ta wersja przenosi też pakiet na start-sdk 2.0 (wymaga StartOS 0.4.0-beta.10 lub nowszego).
+
+Szczegóły wydania: https://openclaw.bot.`,
+    fr_FR: `Met à jour OpenClaw vers 2026.7.1.
+
+Cette version fait également passer le paquet à start-sdk 2.0 (nécessite StartOS 0.4.0-beta.10 ou une version ultérieure).
+
+Voir https://openclaw.bot pour les détails de la version.`,
   },
   migrations: {
     up: async ({ effects }) => {},
