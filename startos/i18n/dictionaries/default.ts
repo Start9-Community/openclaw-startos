@@ -104,6 +104,15 @@ const dict = {
   'OpenClaw will lose StartOS administrative access until you run Login to StartOS again.': 81,
   'StartOS Access Revoked': 82,
   "OpenClaw's stored start-cli authentication was removed. Run Login to StartOS to grant access again.": 83,
+
+  // configureSimplex action
+  'Configure SimpleX': 84,
+  'Enable the SimpleX channel and configure how it handles direct messages.': 85,
+  'Enable SimpleX Channel': 86,
+  'Install the openclaw-simplex plugin and configure it to use the SimpleX Websocket Bridge service. Note: installation may take a few minutes.': 87,
+  'Could not install the SimpleX plugin': 88,
+  'Could not uninstall the SimpleX plugin: ': 91,
+  Enabled: 94,
 } as const
 
 /**

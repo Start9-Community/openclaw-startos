@@ -6,6 +6,7 @@ import { startCliConfigYaml } from './fileModels/startCliConfig.yaml'
 import { i18n } from './i18n'
 import { sdk } from './sdk'
 import { mainMounts, uiPort } from './utils'
+import { withSimplexMounts } from './simplex'
 
 // Maps each provider's auth-profile id to the env var OpenClaw reads its API
 // key from. Keep in sync with MANAGED_PROVIDERS in configureApiCredentials.ts.
@@ -43,11 +44,21 @@ export const main = sdk.setupMain(async ({ effects }) => {
   // Update start-cli config with host URL
   await startCliConfigYaml.merge(effects, { host: `https://${osIp}` })
 
-  // Create subcontainer with volume mount for persistent data
+  // Base volume mount for persistent data, then let each optional integration
+  // append its own mounts when enabled. Add future integrations to this list —
+  // mirrors the dependency fragments composed in dependencies.ts. Each entry is
+  // `(effects, mounts) => Promise<mounts>` and returns mounts unchanged when its
+  // integration is disabled.
+  const mountIntegrations = [withSimplexMounts]
+  let mounts = mainMounts()
+  for (const appendMounts of mountIntegrations) {
+    mounts = await appendMounts(effects, mounts)
+  }
+
   const openclawSub = await sdk.SubContainer.of(
     effects,
     { imageId: 'openclaw' },
-    mainMounts(),
+    mounts,
     'openclaw-sub',
   )
 

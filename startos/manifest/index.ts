@@ -65,5 +65,16 @@ export const manifest = setupManifest({
         title: 'llama.cpp',
       },
     },
+    'simplex-websocket-bridge': {
+      optional: true,
+      description: {
+        en_US:
+          'Optional: exchange files over SimpleX. Enable it in the Configure SimpleX action to mount the bridge file-exchange directories.',
+      },
+      metadata: {
+        icon: 'https://raw.githubusercontent.com/Start9-Community/simplex-websocket-bridge-startos/master/icon.svg',
+        title: 'SimpleX Websocket Bridge',
+      },
+    },
   },
 })

@@ -1,5 +1,6 @@
 import { sdk } from './sdk'
 import { openclawJson } from './fileModels/openclaw.json'
+import { simplexDependencies } from './simplex'
 
 // Version ranges for the local-inference backends (mirrors hermes-agent). Keyed
 // by the dependency/package id, which is also the `provider/model` prefix the
@@ -35,5 +36,10 @@ export const setDependencies = sdk.setupDependencies(async ({ effects }) => {
       deps[id] = { kind: 'running', versionRange, healthChecks: ['primary'] }
     }
   }
-  return deps
+
+  // Optional integrations contribute their fragment when enabled ({} otherwise).
+  return {
+    ...deps,
+    ...(await simplexDependencies(effects)),
+  }
 })
