@@ -4,6 +4,7 @@ import { authProfilesJson } from './fileModels/authProfiles.json'
 import { openclawJson } from './fileModels/openclaw.json'
 import { startCliConfigYaml } from './fileModels/startCliConfig.yaml'
 import { i18n } from './i18n'
+import { uiHostId, uiInterfaceId } from './interfaces'
 import { sdk } from './sdk'
 import { mainMounts, uiPort } from './utils'
 
@@ -43,8 +44,25 @@ export const main = sdk.setupMain(async ({ effects }) => {
   // Update start-cli config with host URL
   await startCliConfigYaml.merge(effects, { host: `https://${osIp}` })
 
+  // The gateway's own LXC-bridge (lxcbr0) URL for its `ui` interface, e.g.
+  // `http://10.0.3.1:18789`. Replaces the retired `openclaw.startos:<port>` DNS
+  // name for the in-box health check. The map fn returns just the resolved URL,
+  // so `.const()` re-runs `main` only if that URL changes.
+  const uiUrl = await sdk.host
+    .getOwn(effects, uiHostId, (host) => {
+      const iface = Object.values(host?.bindings ?? {})
+        .flatMap((b) => Object.values(b.interfaces))
+        .find((i) => i.id === uiInterfaceId)
+      return iface
+        ? iface.addressInfo
+            .filter({ kind: 'bridge', predicate: (h) => !h.ssl })
+            .format('urlstring')[0]
+        : undefined
+    })
+    .const()
+
   // Create subcontainer with volume mount for persistent data
-  const openclawSub = await sdk.SubContainer.of(
+  const openclawSub = sdk.SubContainer.of(
     effects,
     { imageId: 'openclaw' },
     mainMounts(),
@@ -92,14 +110,15 @@ export const main = sdk.setupMain(async ({ effects }) => {
       ready: {
         display: i18n('Web Interface'),
         fn: () =>
-          sdk.healthCheck.checkWebUrl(
-            effects,
-            `http://openclaw.startos:${uiPort}`,
-            {
-              successMessage: i18n('OpenClaw Gateway is ready'),
-              errorMessage: i18n('OpenClaw Gateway is not ready'),
-            },
-          ),
+          uiUrl
+            ? sdk.healthCheck.checkWebUrl(effects, uiUrl, {
+                successMessage: i18n('OpenClaw Gateway is ready'),
+                errorMessage: i18n('OpenClaw Gateway is not ready'),
+              })
+            : Promise.resolve({
+                result: 'starting' as const,
+                message: i18n('OpenClaw Gateway is not ready'),
+              }),
         gracePeriod: 40_000,
       },
       requires: ['install-root-ca', 'chown'],

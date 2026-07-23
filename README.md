@@ -140,9 +140,9 @@ Sets or resets the gateway authentication password for the web UI. The action na
 
 **Input:** Primary provider (required) and optional fallback provider. Each is either a cloud provider or a local backend:
 - **Cloud:** Anthropic (Claude), OpenAI (GPT), Google (Gemini), or xAI (Grok) — a per-provider model dropdown plus a **Custom Model** field for any id not listed, and the provider's **API Key** (masked; leave blank when reconfiguring to keep the saved key).
-- **Local:** Ollama, vLLM, or llama.cpp running on your StartOS server — enter the served model id. Selecting one flips it to a running dependency and wires its `.startos` endpoint automatically (vLLM's key is read from its published credentials). No cloud API key, so prompts stay on the device.
+- **Local:** Ollama, vLLM, or llama.cpp running on your StartOS server — enter the served model id. Selecting one flips it to a running dependency and wires its bridge endpoint automatically (vLLM's key is read from its published credentials). No cloud API key, so prompts stay on the device.
 
-The selected model is the default; change it anytime from Web UI chat with the `/model` command. Cloud keys are bridged to the gateway as the env vars OpenClaw reads (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`); local backends are written as `models.providers.<id>` entries in `openclaw.json` pointing at the package's `.startos` endpoint (Ollama via its native API, vLLM/llama.cpp OpenAI-compatible).
+The selected model is the default; change it anytime from Web UI chat with the `/model` command. Cloud keys are bridged to the gateway as the env vars OpenClaw reads (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`); local backends are written as `models.providers.<id>` entries in `openclaw.json` pointing at the dependency's LXC-bridge endpoint — resolved at apply time from its `api` interface (host `api-multi`), since the `<pkg>.startos` DNS name no longer resolves between containers (Ollama via its native API, vLLM/llama.cpp OpenAI-compatible).
 
 ### Login to StartOS
 
@@ -272,7 +272,7 @@ actions:
       - openai (gpt-5.5, gpt-5.4, gpt-5.4-mini)
       - google (gemini-3.1-pro-preview, gemini-3-flash-preview)
       - xai (grok-4.3, grok-build-0.1)
-      - local: ollama, vllm, llama-cpp (served-model id; models.providers.<id> pointing at <id>.startos; ollama uses api=ollama, vllm/llama-cpp api=openai-completions)
+      - local: ollama, vllm, llama-cpp (served-model id; models.providers.<id> pointing at <id>'s LXC-bridge api endpoint, resolved at apply time from host api-multi; ollama uses api=ollama, vllm/llama-cpp api=openai-completions)
     custom_model_field: true
     provider_key_envs: [ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, XAI_API_KEY]
   - id: set-password

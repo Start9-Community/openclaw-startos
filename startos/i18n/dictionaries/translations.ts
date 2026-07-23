@@ -86,6 +86,7 @@ export default {
     81: 'OpenClaw perderá el acceso administrativo a StartOS hasta que vuelva a ejecutar Iniciar sesión en StartOS.',
     82: 'Acceso a StartOS revocado',
     83: 'Se eliminó la autenticación start-cli almacenada de OpenClaw. Ejecute Iniciar sesión en StartOS para volver a otorgar acceso.',
+    84: 'El backend local seleccionado aún no es accesible en la red interna. Asegúrese de que esté instalado y en ejecución, luego vuelva a ejecutar Configurar proveedor de IA.',
   },
   de_DE: {
     0: 'Starte OpenClaw Gateway!',
@@ -172,6 +173,7 @@ export default {
     81: 'OpenClaw verliert den administrativen Zugriff auf StartOS, bis Sie „Bei StartOS anmelden“ erneut ausführen.',
     82: 'StartOS-Zugriff entzogen',
     83: 'Die gespeicherte start-cli-Authentifizierung von OpenClaw wurde entfernt. Führen Sie „Bei StartOS anmelden“ aus, um den Zugriff erneut zu gewähren.',
+    84: 'Das ausgewählte lokale Backend ist im internen Netzwerk noch nicht erreichbar. Stellen Sie sicher, dass es installiert ist und läuft, und führen Sie dann „KI-Anbieter konfigurieren“ erneut aus.',
   },
   pl_PL: {
     0: 'Uruchamianie OpenClaw Gateway!',
@@ -258,6 +260,7 @@ export default {
     81: 'OpenClaw utraci dostęp administracyjny do StartOS, dopóki ponownie nie uruchomisz „Zaloguj się do StartOS”.',
     82: 'Dostęp do StartOS odwołany',
     83: 'Zapisana autoryzacja start-cli OpenClaw została usunięta. Uruchom „Zaloguj się do StartOS”, aby ponownie przyznać dostęp.',
+    84: 'Wybrany lokalny backend nie jest jeszcze osiągalny w sieci wewnętrznej. Upewnij się, że jest zainstalowany i uruchomiony, a następnie ponownie uruchom Konfiguruj dostawcę AI.',
   },
   fr_FR: {
     0: 'Démarrage de OpenClaw Gateway !',
@@ -344,5 +347,6 @@ export default {
     81: "OpenClaw perdra son accès administratif à StartOS jusqu'à ce que vous exécutiez de nouveau « Se connecter à StartOS ».",
     82: 'Accès à StartOS révoqué',
     83: "L'authentification start-cli stockée d'OpenClaw a été supprimée. Exécutez « Se connecter à StartOS » pour accorder de nouveau l'accès.",
+    84: "Le backend local sélectionné n'est pas encore accessible sur le réseau interne. Assurez-vous qu'il est installé et en cours d'exécution, puis exécutez de nouveau Configurer le fournisseur d'IA.",
   },
 } satisfies Record<string, LangDict>

@@ -104,6 +104,9 @@ const dict = {
   'OpenClaw will lose StartOS administrative access until you run Login to StartOS again.': 81,
   'StartOS Access Revoked': 82,
   "OpenClaw's stored start-cli authentication was removed. Run Login to StartOS to grant access again.": 83,
+
+  // actions/configureApiCredentials.ts
+  'The selected local backend is not yet reachable on the internal network. Make sure it is installed and running, then run Configure AI Provider again.': 84,
 } as const
 
 /**

@@ -55,7 +55,7 @@ const skillsSchema = z.object({
 
 // Custom/local provider catalog (openclaw.json `models.providers`). Configure AI
 // Provider writes an `openai-completions` entry here for each selected local
-// backend (Ollama/vLLM/llama.cpp), pointing at its `.startos` endpoint.
+// backend (Ollama/vLLM/llama.cpp), pointing at its LXC-bridge endpoint.
 const providerEntryShape = z.object({
   baseUrl: z.string().optional().catch(undefined),
   apiKey: z.string().optional().catch(undefined),

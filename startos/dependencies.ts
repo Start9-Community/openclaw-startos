@@ -5,9 +5,9 @@ import { openclawJson } from './fileModels/openclaw.json'
 // by the dependency/package id, which is also the `provider/model` prefix the
 // Configure AI Provider action writes.
 const LOCAL_DEP_RANGES: Record<string, string> = {
-  ollama: '>=0.21.0:0',
-  vllm: '>=0.16.0:0.1',
-  'llama-cpp': '>=1.0.9544:0',
+  ollama: '>=0.31.1:1',
+  vllm: '>=0.23.1-rc.0:10',
+  'llama-cpp': '>=1.0.9837:1',
 }
 
 export const setDependencies = sdk.setupDependencies(async ({ effects }) => {
