@@ -12,6 +12,21 @@ const whatsappChannelShape = z.object({
   allowFrom: z.array(z.string()).optional().catch(undefined),
 })
 
+const simplexChannelShape = z.object({
+  enabled: z.boolean().optional().catch(undefined),
+  dmPolicy: z.string().optional().catch(undefined),
+  connection: z
+    .object({
+      allowUnsafeRemoteWs: z.boolean().optional().catch(undefined),
+      wsUrl: z.string().optional().catch(undefined),
+      filesFolder: z.string().optional().catch(undefined),
+      outboundFolder: z.string().optional().catch(undefined),
+      outboundFolderOnClient: z.string().optional().catch(undefined),
+    })
+    .optional()
+    .catch(undefined),
+})
+
 const authSchema = z.object({
   mode: z.literal('password').catch('password'),
   password: z.string().optional().catch(undefined),
@@ -95,6 +110,7 @@ const shape = z.object({
     .object({
       telegram: telegramChannelShape.optional().catch(undefined),
       whatsapp: whatsappChannelShape.optional().catch(undefined),
+      'openclaw-simplex': simplexChannelShape.optional().catch(undefined),
     })
     .optional()
     .catch(undefined),

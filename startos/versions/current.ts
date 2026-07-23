@@ -1,33 +1,23 @@
 import { VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '2026.7.1:0',
+  version: '2026.7.1:1',
   releaseNotes: {
-    en_US: `Updated OpenClaw to 2026.7.1.
+    en_US: `Adds an optional SimpleX channel.
 
-This release also migrates the package to start-sdk 2.0 (requires StartOS 0.4.0-beta.10 or later).
+Enable it in the new "Configure SimpleX" action to run OpenClaw over SimpleX through the SimpleX Websocket Bridge package (installed as an optional dependency). The action installs the openclaw-simplex plugin and points it at the bridge over the internal network.`,
+    es_ES: `Añade un canal opcional de SimpleX.
 
-See https://openclaw.bot for release details.`,
-    es_ES: `Actualiza OpenClaw a 2026.7.1.
+Actívalo en la nueva acción «Configurar SimpleX» para ejecutar OpenClaw sobre SimpleX a través del paquete SimpleX Websocket Bridge (instalado como dependencia opcional). La acción instala el complemento openclaw-simplex y lo apunta al puente a través de la red interna.`,
+    de_DE: `Fügt einen optionalen SimpleX-Kanal hinzu.
 
-Esta versión también migra el paquete a start-sdk 2.0 (requiere StartOS 0.4.0-beta.10 o posterior).
+Aktivieren Sie ihn in der neuen Aktion „SimpleX konfigurieren“, um OpenClaw über SimpleX mithilfe des Pakets SimpleX Websocket Bridge (als optionale Abhängigkeit installiert) zu betreiben. Die Aktion installiert das openclaw-simplex-Plugin und richtet es über das interne Netzwerk auf die Bridge aus.`,
+    pl_PL: `Dodaje opcjonalny kanał SimpleX.
 
-Consulta https://openclaw.bot para conocer los detalles de la versión.`,
-    de_DE: `Aktualisiert OpenClaw auf 2026.7.1.
+Włącz go w nowej akcji „Konfiguruj SimpleX”, aby uruchomić OpenClaw przez SimpleX za pośrednictwem pakietu SimpleX Websocket Bridge (instalowanego jako opcjonalna zależność). Akcja instaluje wtyczkę openclaw-simplex i kieruje ją na mostek przez sieć wewnętrzną.`,
+    fr_FR: `Ajoute un canal SimpleX facultatif.
 
-Diese Version stellt das Paket außerdem auf start-sdk 2.0 um (erfordert StartOS 0.4.0-beta.10 oder neuer).
-
-Weitere Informationen zur Version unter https://openclaw.bot.`,
-    pl_PL: `Aktualizuje OpenClaw do 2026.7.1.
-
-Ta wersja przenosi też pakiet na start-sdk 2.0 (wymaga StartOS 0.4.0-beta.10 lub nowszego).
-
-Szczegóły wydania: https://openclaw.bot.`,
-    fr_FR: `Met à jour OpenClaw vers 2026.7.1.
-
-Cette version fait également passer le paquet à start-sdk 2.0 (nécessite StartOS 0.4.0-beta.10 ou une version ultérieure).
-
-Voir https://openclaw.bot pour les détails de la version.`,
+Activez-le dans la nouvelle action « Configurer SimpleX » pour faire fonctionner OpenClaw via SimpleX grâce au paquet SimpleX Websocket Bridge (installé comme dépendance facultative). L'action installe le plugin openclaw-simplex et le dirige vers le pont via le réseau interne.`,
   },
   migrations: {
     up: async ({ effects }) => {},
