@@ -7,6 +7,7 @@ import { i18n } from './i18n'
 import { uiHostId, uiInterfaceId } from './interfaces'
 import { sdk } from './sdk'
 import { mainMounts, uiPort } from './utils'
+import { withSimplexMounts } from './simplex'
 
 // Maps each provider's auth-profile id to the env var OpenClaw reads its API
 // key from. Keep in sync with MANAGED_PROVIDERS in configureApiCredentials.ts.
@@ -61,11 +62,18 @@ export const main = sdk.setupMain(async ({ effects }) => {
     })
     .const()
 
-  // Create subcontainer with volume mount for persistent data
+  // Base volume mount, then let each optional integration append its own mounts
+  // when enabled (each returns mounts unchanged when disabled).
+  const mountIntegrations = [withSimplexMounts]
+  let mounts = mainMounts()
+  for (const appendMounts of mountIntegrations) {
+    mounts = await appendMounts(effects, mounts)
+  }
+
   const openclawSub = sdk.SubContainer.of(
     effects,
     { imageId: 'openclaw' },
-    mainMounts(),
+    mounts,
     'openclaw-sub',
   )
 

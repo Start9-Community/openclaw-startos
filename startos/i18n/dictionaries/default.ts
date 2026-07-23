@@ -107,6 +107,16 @@ const dict = {
 
   // actions/configureApiCredentials.ts
   'The selected local backend is not yet reachable on the internal network. Make sure it is installed and running, then run Configure AI Provider again.': 84,
+
+  // actions/configureSimplex.ts
+  'Configure SimpleX': 85,
+  'Enable the SimpleX channel and configure how it handles direct messages.': 86,
+  'Enable SimpleX Channel': 87,
+  'Install the openclaw-simplex plugin and configure it to use the SimpleX Websocket Bridge service. Note: installation may take a few minutes.': 88,
+  Enabled: 89,
+  'Could not install the SimpleX plugin': 90,
+  'Could not uninstall the SimpleX plugin: ': 91,
+  'The SimpleX Websocket Bridge is not reachable on the internal network. Make sure it is installed and running, then try again.': 92,
 } as const
 
 /**
