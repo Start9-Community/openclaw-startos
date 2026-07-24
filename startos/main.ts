@@ -91,7 +91,19 @@ export const main = sdk.setupMain(async ({ effects }) => {
     .addOneshot('chown', {
       subcontainer: openclawSub,
       exec: {
-        command: ['chown', '-R', 'node:node', '/data'],
+        // /data is handed to node so the gateway can write its state. But
+        // OpenClaw runs as root here and its install policy refuses to load
+        // plugin code owned by a lower-privilege uid, while `openclaw plugins
+        // install` writes the tree root-owned. So the recursive node-chown is
+        // what would flip it to node and get it blocked on the next load.
+        // Re-assert root ownership on the npm tree after the node-chown (mkdir
+        // first so it exists before the first install); re-running also
+        // self-heals a tree a previous boot left node-owned.
+        command: [
+          'sh',
+          '-c',
+          'chown -R node:node /data && mkdir -p /data/.openclaw/npm && chown -R root:root /data/.openclaw/npm',
+        ],
       },
       requires: [],
     })
