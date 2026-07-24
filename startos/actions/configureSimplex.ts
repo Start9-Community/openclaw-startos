@@ -77,6 +77,55 @@ async function runOpenclawCli(
   )
 }
 
+/**
+ * Bring `plugins` policy to what a real install would have left: the plugin
+ * enabled, and named in `allow` when a restrictive allowlist exists. Mirrors
+ * OpenClaw's own semantics — an absent/empty `allow` means unrestricted loading,
+ * so we must not create a list (that would newly restrict every other plugin).
+ * No-ops when policy is already correct, so a plain re-submit stays cheap.
+ */
+async function repairPluginPolicy(
+  effects: Parameters<Parameters<typeof sdk.Action.withInput>[3]>[0]['effects'],
+) {
+  const plugins = await openclawJson.read((c) => c?.plugins).once()
+  const allow = plugins?.allow
+  const needsAllow =
+    Array.isArray(allow) &&
+    allow.length > 0 &&
+    !allow.includes(SIMPLEX_PLUGIN_ID)
+  const needsEnable = plugins?.entries?.[SIMPLEX_PLUGIN_ID]?.enabled !== true
+  if (!needsAllow && !needsEnable) return
+
+  await openclawJson.merge(effects, {
+    plugins: {
+      // Whole-array write: the file model's merge replaces arrays rather than
+      // appending, so hand it the full authored order plus our id.
+      ...(needsAllow ? { allow: [...(allow as string[]), SIMPLEX_PLUGIN_ID] } : {}),
+      entries: { [SIMPLEX_PLUGIN_ID]: { enabled: true } },
+    },
+  })
+
+  // Config is now correct, but OpenClaw also keeps a persisted registry snapshot
+  // of plugin policy. Rebuild it so `plugins list` and the next load agree with
+  // what we just wrote. Best-effort: the restart below reloads regardless.
+  try {
+    const refresh = await runOpenclawCli(effects, 'simplex-plugin-registry', [
+      'plugins',
+      'registry',
+      '--refresh',
+    ])
+    if (refresh.exitCode !== 0) {
+      console.warn(
+        `Could not refresh the plugin registry: exit ${refresh.exitCode}`,
+      )
+    }
+  } catch (err) {
+    console.warn(
+      `Could not refresh the plugin registry: ${(err as Error).message}`,
+    )
+  }
+}
+
 const inputSpec = InputSpec.of({
   channel: Value.union({
     name: i18n('Enable SimpleX Channel'),
@@ -176,6 +225,14 @@ export const configureSimplex = sdk.Action.withInput(
             i18n('Could not install the SimpleX plugin') + `: ${detail}`,
           )
         }
+      } else {
+        // `plugins install` is what enables the plugin and adds it to a
+        // restrictive allowlist, so skipping it leaves an installed-but-unloaded
+        // plugin whenever that policy is missing (fresh box that installed the
+        // plugin out-of-band, hand-edited config, leftovers from a disable).
+        // Repair it here instead of reinstalling: config is the canonical owner,
+        // and this costs no network round trip.
+        await repairPluginPolicy(effects)
       }
 
       // Point OpenClaw's SimpleX channel at the bridge and wire file exchange to
