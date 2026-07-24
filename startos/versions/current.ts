@@ -1,7 +1,7 @@
 import { VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '2026.7.1:1',
+  version: '2026.7.1:2',
   releaseNotes: {
     en_US: `Adds an optional SimpleX channel.
 
