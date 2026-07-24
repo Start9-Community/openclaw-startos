@@ -12,9 +12,11 @@ const { InputSpec, Value, Variants } = sdk
 const SIMPLEX_PLUGIN_SPEC = '@dangoldbj/openclaw-simplex'
 const SIMPLEX_PLUGIN_ID = 'openclaw-simplex'
 
-// `subc.exec`'s default 30s timeout SIGKILLs the plugin install mid-download
-// (it also resolves the large `openclaw` peer from npm). npm's own timeout is
-// >=300s, so go above that.
+// Runs openclaw as `node` (uid 1000) so the installed plugin tree is node-owned
+// and the node gateway loads it — a root-owned install is blocked by OpenClaw's
+// ownership policy. The high timeout clears `subc.exec`'s 30s default, which
+// would SIGKILL the npm download mid-flight (it resolves the large `openclaw`
+// peer, and npm's own timeout is >=300s).
 async function runOpenclawCli(
   effects: Parameters<Parameters<typeof sdk.Action.withInput>[3]>[0]['effects'],
   name: string,
@@ -29,7 +31,10 @@ async function runOpenclawCli(
     async (subc) =>
       subc.exec(
         ['openclaw', ...args],
-        { env: { HOME: '/data', OPENCLAW_STATE_DIR: '/data/.openclaw' } },
+        {
+          user: 'node',
+          env: { HOME: '/data', OPENCLAW_STATE_DIR: '/data/.openclaw' },
+        },
         timeoutMs,
       ),
   )

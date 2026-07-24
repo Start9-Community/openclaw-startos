@@ -88,10 +88,14 @@ export const main = sdk.setupMain(async ({ effects }) => {
       },
       requires: [],
     })
+    // OpenClaw runs as `node` (uid 1000) and expects its state/plugins owned by
+    // that uid, so /data is node-owned and every openclaw/start-cli exec runs as
+    // node. Only root can chown, so this oneshot (and the CA install) stay root.
     .addOneshot('chown', {
       subcontainer: openclawSub,
       exec: {
         command: ['chown', '-R', 'node:node', '/data'],
+        user: 'root',
       },
       requires: [],
     })
@@ -108,6 +112,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
           '--verbose',
           '--allow-unconfigured',
         ],
+        user: 'node',
         env: {
           HOME: '/data',
           OPENCLAW_STATE_DIR: '/data/.openclaw',
@@ -137,7 +142,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
         fn: async (subcontainer) => {
           const result = await subcontainer.exec(
             ['start-cli', 'auth', 'session', 'list'],
-            { user: 'root', env: { HOME: '/data' } },
+            { user: 'node', env: { HOME: '/data' } },
           )
           if (result.exitCode !== 0) {
             await sdk.action.createOwnTask(effects, loginToOs, 'important', {
@@ -155,7 +160,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
       subcontainer: openclawSub,
       exec: {
         fn: async (subcontainer) => {
-          const execOpts = { user: 'root' as const, env: { HOME: '/data' } }
+          const execOpts = { user: 'node' as const, env: { HOME: '/data' } }
           const commands: [string, string[]][] = [
             ['Server Metrics', ['start-cli', 'server', 'metrics']],
             ['Server Time', ['start-cli', 'server', 'time']],
