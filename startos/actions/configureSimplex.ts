@@ -1,4 +1,6 @@
+import { T, SubContainer } from '@start9labs/start-sdk'
 import { sdk } from '../sdk'
+import { manifest } from '../manifest'
 import { i18n } from '../i18n'
 import { simplexJson } from '../fileModels/simplex.json'
 import { openclawJson } from '../fileModels/openclaw.json'
@@ -26,10 +28,16 @@ const SIMPLEX_PLUGIN_ID = 'openclaw-simplex'
 // installed >= required, comparing numeric release components (prerelease/build
 // suffixes ignored). Returns false when the version is missing/unparsable, so
 // the caller falls through to (re)install rather than trusting an unknown.
-function meetsMinVersion(installed: string | undefined, required: string): boolean {
+function meetsMinVersion(
+  installed: string | undefined,
+  required: string,
+): boolean {
   if (!installed) return false
   const parts = (v: string) =>
-    v.split('-')[0].split('.').map((n) => Number.parseInt(n, 10) || 0)
+    v
+      .split('-')[0]
+      .split('.')
+      .map((n) => Number.parseInt(n, 10) || 0)
   const a = parts(installed)
   const b = parts(required)
   for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
@@ -47,12 +55,16 @@ function installedPluginVersion(listStdout: string): string | undefined {
   try {
     const parsed = JSON.parse(listStdout || '{}')
     const plugins = Array.isArray(parsed) ? parsed : (parsed.plugins ?? [])
-    const entry = plugins.find((p: { id?: string }) => p?.id === SIMPLEX_PLUGIN_ID)
+    const entry = plugins.find(
+      (p: { id?: string }) => p?.id === SIMPLEX_PLUGIN_ID,
+    )
     return entry?.version
   } catch {
     return undefined
   }
 }
+
+const CLI_ENV = { HOME: '/data', OPENCLAW_STATE_DIR: '/data/.openclaw' }
 
 // `subc.exec`'s default 30s timeout SIGKILLs the plugin install mid-download
 // (it also resolves the large `openclaw` peer from npm). npm's own timeout is
@@ -69,12 +81,59 @@ async function runOpenclawCli(
     mainMounts(),
     name,
     async (subc) =>
-      subc.exec(
-        ['openclaw', ...args],
-        { env: { HOME: '/data', OPENCLAW_STATE_DIR: '/data/.openclaw' } },
-        timeoutMs,
-      ),
+      subc.exec(['openclaw', ...args], { env: CLI_ENV }, timeoutMs),
   )
+}
+
+/**
+ * Read the installed plugin version, keeping "the probe failed" distinct from
+ * "the plugin isn't installed". Both yield no version, but only the latter is
+ * evidence about the plugin, so callers that act on absence must tell them apart.
+ */
+async function readInstalledPlugin(
+  subcontainer: SubContainer<typeof manifest>,
+): Promise<{ probed: boolean; version?: string }> {
+  const list = await subcontainer.exec(
+    ['openclaw', 'plugins', 'list', '--json'],
+    { env: CLI_ENV },
+  )
+  if (list.exitCode !== 0) return { probed: false }
+  return {
+    probed: true,
+    version: installedPluginVersion(String(list.stdout || '')),
+  }
+}
+
+/**
+ * Startup check: ask the user to submit Configure SimpleX when the channel is
+ * enabled but the plugin is missing or behind MIN_PLUGIN_VERSION — the same
+ * condition the action installs on.
+ *
+ * A package update can't re-run actions, so raising MIN_PLUGIN_VERSION in a
+ * future release would otherwise leave the older plugin in place with no signal.
+ * Raising the constant is all a future bump needs; this surfaces it. The task is
+ * created only while the check fails, so one successful submit ends the prompt.
+ *
+ * `plugins list` is local (no network) and this runs after `primary`, so it
+ * never delays startup or readiness.
+ */
+export async function requestSimplexPluginUpgrade(
+  effects: T.Effects,
+  subcontainer: SubContainer<typeof manifest>,
+): Promise<null> {
+  if (!(await simplexJson.read((c) => c).once())?.enabled) return null
+
+  // A failed probe says nothing about the plugin, so stay quiet rather than
+  // raise a task the user can't clear by acting on it. A successful probe that
+  // reports no version does mean the plugin is absent, which the action fixes.
+  const { probed, version } = await readInstalledPlugin(subcontainer)
+  if (!probed) return null
+  if (version && meetsMinVersion(version, MIN_PLUGIN_VERSION)) return null
+
+  await sdk.action.createOwnTask(effects, configureSimplex, 'important', {
+    reason: i18n('Submit Configure SimpleX to upgrade the SimpleX plugin'),
+  })
+  return null
 }
 
 /**
@@ -100,7 +159,9 @@ async function repairPluginPolicy(
     plugins: {
       // Whole-array write: the file model's merge replaces arrays rather than
       // appending, so hand it the full authored order plus our id.
-      ...(needsAllow ? { allow: [...(allow as string[]), SIMPLEX_PLUGIN_ID] } : {}),
+      ...(needsAllow
+        ? { allow: [...(allow as string[]), SIMPLEX_PLUGIN_ID] }
+        : {}),
       entries: { [SIMPLEX_PLUGIN_ID]: { enabled: true } },
     },
   })

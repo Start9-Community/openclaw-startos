@@ -95,6 +95,7 @@ export default {
     90: 'No se pudo instalar el complemento de SimpleX',
     91: 'No se pudo desinstalar el complemento de SimpleX: ',
     92: 'El SimpleX Websocket Bridge no es accesible en la red interna. Asegúrese de que esté instalado y en ejecución, luego vuelva a intentarlo.',
+    93: 'Envíe Configurar SimpleX para actualizar el complemento de SimpleX',
   },
   de_DE: {
     0: 'Starte OpenClaw Gateway!',
@@ -190,6 +191,7 @@ export default {
     90: 'Das SimpleX-Plugin konnte nicht installiert werden',
     91: 'Das SimpleX-Plugin konnte nicht deinstalliert werden: ',
     92: 'Die SimpleX Websocket Bridge ist im internen Netzwerk nicht erreichbar. Stellen Sie sicher, dass sie installiert ist und läuft, und versuchen Sie es dann erneut.',
+    93: 'Senden Sie „SimpleX konfigurieren“ ab, um das SimpleX-Plugin zu aktualisieren',
   },
   pl_PL: {
     0: 'Uruchamianie OpenClaw Gateway!',
@@ -285,6 +287,7 @@ export default {
     90: 'Nie udało się zainstalować wtyczki SimpleX',
     91: 'Nie udało się odinstalować wtyczki SimpleX: ',
     92: 'SimpleX Websocket Bridge nie jest osiągalny w sieci wewnętrznej. Upewnij się, że jest zainstalowany i uruchomiony, a następnie spróbuj ponownie.',
+    93: 'Wyślij „Konfiguruj SimpleX”, aby zaktualizować wtyczkę SimpleX',
   },
   fr_FR: {
     0: 'Démarrage de OpenClaw Gateway !',
@@ -380,5 +383,6 @@ export default {
     90: "Impossible d'installer le plugin SimpleX",
     91: 'Impossible de désinstaller le plugin SimpleX : ',
     92: "Le SimpleX Websocket Bridge n'est pas accessible sur le réseau interne. Assurez-vous qu'il est installé et en cours d'exécution, puis réessayez.",
+    93: 'Soumettez « Configurer SimpleX » pour mettre à jour le plugin SimpleX',
   },
 } satisfies Record<string, LangDict>

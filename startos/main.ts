@@ -8,6 +8,7 @@ import { uiHostId, uiInterfaceId } from './interfaces'
 import { sdk } from './sdk'
 import { mainMounts, uiPort } from './utils'
 import { withSimplexMounts } from './simplex'
+import { requestSimplexPluginUpgrade } from './actions/configureSimplex'
 
 // Maps each provider's auth-profile id to the env var OpenClaw reads its API
 // key from. Keep in sync with MANAGED_PROVIDERS in configureApiCredentials.ts.
@@ -148,6 +149,14 @@ export const main = sdk.setupMain(async ({ effects }) => {
           }
           return null
         },
+      },
+      requires: ['primary'],
+    })
+    .addOneshot('check-simplex-plugin', {
+      subcontainer: openclawSub,
+      exec: {
+        fn: (subcontainer) =>
+          requestSimplexPluginUpgrade(effects, subcontainer),
       },
       requires: ['primary'],
     })
