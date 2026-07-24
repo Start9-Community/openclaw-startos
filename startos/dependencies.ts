@@ -6,9 +6,9 @@ import { simplexDependencies } from './simplex'
 // by the dependency/package id, which is also the `provider/model` prefix the
 // Configure AI Provider action writes.
 const LOCAL_DEP_RANGES: Record<string, string> = {
-  ollama: '>=0.31.1:1',
-  vllm: '>=0.23.1-rc.0:10',
-  'llama-cpp': '>=1.0.9837:1',
+  ollama: '>=0.31.2:2',
+  vllm: '>=0.23.1-rc.0:13',
+  'llama-cpp': '>=1.0.9994:1',
 }
 
 export const setDependencies = sdk.setupDependencies(async ({ effects }) => {
