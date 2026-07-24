@@ -84,7 +84,7 @@ On every startup:
 1. Updates `start-cli` config with current StartOS server IP
 2. Sets file ownership (`chown` on `/data`)
 3. Starts the gateway daemon
-4. After gateway is ready: checks `start-cli` login status — creates **important task** "Login to StartOS" if not authenticated
+4. After gateway is ready: checks `start-cli` login status — creates **important task** "Login to StartOS" if not authenticated; and if the SimpleX channel is enabled, creates **important task** "Configure SimpleX" when its plugin is missing or below the minimum supported version
 5. Captures a server state snapshot to `MEMORY.md` (server metrics, packages, notifications, network, disk info)
 
 ## Configuration Management
@@ -195,15 +195,32 @@ Removes OpenClaw's stored `start-cli` authentication (the `.cookies.json` saved 
 
 **Input:** DM policy (Allowlist or Open) and allowed phone numbers (comma-separated, international format). Scan the returned QR code with WhatsApp (Settings > Linked Devices > Link a Device).
 
+### Configure SimpleX
+
+| Property | Value |
+|----------|-------|
+| ID | `configure-simplex` |
+| Availability | Any status |
+| Visibility | Enabled |
+| Group | Channels |
+| Output | None |
+
+**Input:** Enabled or Disabled, and on enable a DM policy (Pairing or Open).
+
+Unlike the other channel actions, this one also installs the `openclaw-simplex` plugin at runtime (`openclaw plugins install`, pinned to the minimum supported version) and points it at the **SimpleX Websocket Bridge** service, including the bridge's shared directories for sending and receiving files. Installation may take a few minutes. Disabling reverses the order: the channel config is removed first, then the plugin is uninstalled.
+
 ## Dependencies
 
-All optional and gated by the **Configure AI Provider** selection — cloud providers need none. Selecting a local backend flips the matching package to a **running** dependency (`startos/dependencies.ts`):
+All optional. Local model backends are gated by the **Configure AI Provider** selection — cloud providers need none — and the SimpleX bridge by the **Configure SimpleX** action. Each flips the matching package to a **running** dependency (`startos/dependencies.ts`):
 
 | Dependency | Version range | When required |
 |------------|---------------|---------------|
 | `ollama` | `>=0.21.0:0` | Backend set to Ollama |
 | `vllm` | `>=0.16.0:0.1` | Backend set to vLLM |
 | `llama-cpp` | `>=1.0.9544:0` | Backend set to llama.cpp |
+| `simplex-websocket-bridge` | `>=0.3.0:0` | SimpleX channel enabled |
+
+The bridge dependency is additionally gated on its `websocket` health check, and while enabled its file-exchange directories are mounted into this container.
 
 ## Backups and Restore
 
@@ -221,7 +238,7 @@ All optional and gated by the **Configure AI Provider** selection — cloud prov
 
 ## Limitations and Differences
 
-1. **Messaging channels**: Only Telegram and WhatsApp are configured via Actions; other channels (Slack, Discord, Signal, Matrix) require manual configuration
+1. **Messaging channels**: Only Telegram, WhatsApp, and SimpleX are configured via Actions; other channels (Slack, Discord, Signal, Matrix) require manual configuration
 2. **Synapse integration**: Matrix/Synapse bot user creation is implemented but disabled
 3. **Voice features**: Voice Wake and Talk Mode not available (requires companion apps)
 4. **Browser automation**: Limited without display access
@@ -290,11 +307,17 @@ actions:
     name: Connect WhatsApp
     has_input: true
     group: Channels
+  - id: configure-simplex
+    name: Configure SimpleX
+    has_input: true
+    group: Channels
+    installs_plugin: "@dangoldbj/openclaw-simplex (exact pin, min 1.8.0; installed at runtime via openclaw plugins install, skipped when already >= min)"
 
-dependencies: # optional; flipped to running by Configure AI Provider
-  ollama: ">=0.21.0:0"
-  vllm: ">=0.16.0:0.1"
-  llama-cpp: ">=1.0.9544:0"
+dependencies: # optional
+  ollama: ">=0.21.0:0" # flipped to running by Configure AI Provider
+  vllm: ">=0.16.0:0.1" # flipped to running by Configure AI Provider
+  llama-cpp: ">=1.0.9544:0" # flipped to running by Configure AI Provider
+  simplex-websocket-bridge: ">=0.3.0:0" # flipped to running by Configure SimpleX; gated on its websocket health check; file-exchange dirs mounted while enabled
 
 auto_configure:
   - start-cli host URL
@@ -312,6 +335,7 @@ install_tasks:
   - Configure AI Provider (critical)
 startup_tasks:
   - Login to StartOS (important, if start-cli is not authenticated)
+  - Configure SimpleX (important, if the SimpleX channel is enabled and its plugin is missing or below the minimum version; silent if the version probe fails)
 
 not_available:
   - voice_features
