@@ -1,7 +1,7 @@
 import { VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '2026.7.1:3',
+  version: '2026.7.1:4',
   releaseNotes: {
     en_US: `Enables file exchange for the SimpleX channel.
 
