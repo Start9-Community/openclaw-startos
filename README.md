@@ -48,11 +48,12 @@ Best suited for **development and experimentation**.
 
 This package runs **1 custom container**:
 
-| Container | Image | Purpose |
-|-----------|-------|---------|
-| openclaw | Custom build | OpenClaw Gateway with start-cli bundled |
+| Container | Image        | Purpose                                 |
+| --------- | ------------ | --------------------------------------- |
+| openclaw  | Custom build | OpenClaw Gateway with start-cli bundled |
 
 The container includes:
+
 - OpenClaw Gateway binary
 - `start-cli` for StartOS server management
 - Workspace bootstrap files (SOUL.md, IDENTITY.md, HEARTBEAT.md, MEMORY.md)
@@ -60,9 +61,9 @@ The container includes:
 
 ## Volume and Data Layout
 
-| Volume | Mount Point | Purpose |
-|--------|-------------|---------|
-| `main` | `/data` | All OpenClaw data, credentials, workspace |
+| Volume | Mount Point | Purpose                                   |
+| ------ | ----------- | ----------------------------------------- |
+| `main` | `/data`     | All OpenClaw data, credentials, workspace |
 
 **Key paths on the `main` volume:**
 
@@ -93,10 +94,10 @@ On every startup:
 
 On every startup, this package:
 
-| Setting | Value | Purpose |
-|---------|-------|---------|
-| `start-cli host` | StartOS IP address | Server management connection |
-| Heartbeat | Every 24h, target none | Agent heartbeat schedule |
+| Setting          | Value                  | Purpose                      |
+| ---------------- | ---------------------- | ---------------------------- |
+| `start-cli host` | StartOS IP address     | Server management connection |
+| Heartbeat        | Every 24h, target none | Agent heartbeat schedule     |
 
 The gateway password and the AI provider/model are **not** auto-configured — they are set by the **Set Password** and **Configure AI Provider** actions (both critical tasks on first install).
 
@@ -106,9 +107,9 @@ All configuration is done through Actions (see below).
 
 ## Network Access and Interfaces
 
-| Interface | Type | Port | Authentication | Description |
-|-----------|------|------|----------------|-------------|
-| Web UI | ui | 18789 | Password | Gateway control panel and WebChat |
+| Interface | Type | Port  | Authentication | Description                       |
+| --------- | ---- | ----- | -------------- | --------------------------------- |
+| Web UI    | ui   | 18789 | Password       | Gateway control panel and WebChat |
 
 Log in to the gateway with the password set via the **Set Password** action.
 
@@ -116,29 +117,30 @@ Log in to the gateway with the password set via the **Set Password** action.
 
 ### Set Password
 
-| Property | Value |
-|----------|-------|
-| ID | `set-password` |
-| Availability | Any status |
-| Visibility | Enabled |
-| Group | None |
-| Input | None |
-| Output | Generated 22-character password (masked, copyable) |
-| Auto-created | Critical task if no password exists |
+| Property     | Value                                              |
+| ------------ | -------------------------------------------------- |
+| ID           | `set-password`                                     |
+| Availability | Any status                                         |
+| Visibility   | Enabled                                            |
+| Group        | None                                               |
+| Input        | None                                               |
+| Output       | Generated 22-character password (masked, copyable) |
+| Auto-created | Critical task if no password exists                |
 
 Sets or resets the gateway authentication password for the web UI. The action name dynamically changes to "Reset Password" if a password already exists.
 
 ### Configure AI Provider
 
-| Property | Value |
-|----------|-------|
-| ID | `configure-api-credentials` |
-| Availability | Any status |
-| Visibility | Enabled |
-| Group | None |
+| Property     | Value                                 |
+| ------------ | ------------------------------------- |
+| ID           | `configure-api-credentials`           |
+| Availability | Any status                            |
+| Visibility   | Enabled                               |
+| Group        | None                                  |
 | Auto-created | Critical task if no credentials exist |
 
 **Input:** Primary provider (required) and optional fallback provider. Each is either a cloud provider or a local backend:
+
 - **Cloud:** Anthropic (Claude), OpenAI (GPT), Google (Gemini), or xAI (Grok) — a per-provider model dropdown plus a **Custom Model** field for any id not listed, and the provider's **API Key** (masked; leave blank when reconfiguring to keep the saved key).
 - **Local:** Ollama, vLLM, or llama.cpp running on your StartOS server — enter the served model id. Selecting one flips it to a running dependency and wires its bridge endpoint automatically (vLLM's key is read from its published credentials). No cloud API key, so prompts stay on the device.
 
@@ -146,64 +148,64 @@ The selected model is the default; change it anytime from Web UI chat with the `
 
 ### Login to StartOS
 
-| Property | Value |
-|----------|-------|
-| ID | `login-to-os` |
-| Availability | Any status |
-| Visibility | Enabled |
-| Group | None |
-| Input | StartOS master password |
-| Output | None |
+| Property     | Value                                                                      |
+| ------------ | -------------------------------------------------------------------------- |
+| ID           | `login-to-os`                                                              |
+| Availability | Any status                                                                 |
+| Visibility   | Enabled                                                                    |
+| Group        | None                                                                       |
+| Input        | StartOS master password                                                    |
+| Output       | None                                                                       |
 | Auto-created | Important task if start-cli is not authenticated (checked on each startup) |
 
 **Warning:** This grants the package root access to your StartOS server. Only use on a server designated for development purposes.
 
 ### Revoke StartOS Access
 
-| Property | Value |
-|----------|-------|
-| ID | `revoke-startos-access` |
-| Availability | Any status |
-| Visibility | Enabled |
-| Group | None |
-| Input | None |
-| Output | None |
+| Property     | Value                   |
+| ------------ | ----------------------- |
+| ID           | `revoke-startos-access` |
+| Availability | Any status              |
+| Visibility   | Enabled                 |
+| Group        | None                    |
+| Input        | None                    |
+| Output       | None                    |
 
 Removes OpenClaw's stored `start-cli` authentication (the `.cookies.json` saved on the data volume), cutting off server-administration access without uninstalling the service. Run **Login to StartOS** again to grant access back.
 
 ### Connect Telegram
 
-| Property | Value |
-|----------|-------|
-| ID | `connect-telegram` |
-| Availability | Any status |
-| Visibility | Enabled |
-| Group | Channels |
-| Output | Confirmation message |
+| Property     | Value                |
+| ------------ | -------------------- |
+| ID           | `connect-telegram`   |
+| Availability | Any status           |
+| Visibility   | Enabled              |
+| Group        | Channels             |
+| Output       | Confirmation message |
 
 **Input:** Bot token (from @BotFather, required, masked) and DM policy (Pairing or Open).
 
 ### Connect WhatsApp
 
-| Property | Value |
-|----------|-------|
-| ID | `connect-whatsapp` |
-| Availability | **Running only** |
-| Visibility | Enabled |
-| Group | Channels |
-| Output | QR code to scan with WhatsApp |
+| Property     | Value                         |
+| ------------ | ----------------------------- |
+| ID           | `connect-whatsapp`            |
+| Availability | **Running only**              |
+| Visibility   | Enabled                       |
+| Group        | Channels                      |
+| Output       | QR code to scan with WhatsApp |
 
 **Input:** DM policy (Allowlist or Open) and allowed phone numbers (comma-separated, international format). Scan the returned QR code with WhatsApp (Settings > Linked Devices > Link a Device).
 
 ### Configure SimpleX
 
-| Property | Value |
-|----------|-------|
-| ID | `configure-simplex` |
-| Availability | Any status |
-| Visibility | Enabled |
-| Group | Channels |
-| Output | None |
+| Property     | Value               |
+| ------------ | ------------------- |
+| ID           | `configure-simplex` |
+| Availability | Any status          |
+| Visibility   | Enabled             |
+| Group        | Channels            |
+| Output       | None                |
 
 **Input:** Enabled or Disabled, and on enable a DM policy (Pairing or Open).
 
@@ -213,12 +215,12 @@ Unlike the other channel actions, this one also installs the `openclaw-simplex` 
 
 All optional. Local model backends are gated by the **Configure AI Provider** selection — cloud providers need none — and the SimpleX bridge by the **Configure SimpleX** action. Each flips the matching package to a **running** dependency (`startos/dependencies.ts`):
 
-| Dependency | Version range | When required |
-|------------|---------------|---------------|
-| `ollama` | `>=0.21.0:0` | Backend set to Ollama |
-| `vllm` | `>=0.16.0:0.1` | Backend set to vLLM |
-| `llama-cpp` | `>=1.0.9544:0` | Backend set to llama.cpp |
-| `simplex-websocket-bridge` | `>=0.3.0:0` | SimpleX channel enabled |
+| Dependency                 | Version range  | When required            |
+| -------------------------- | -------------- | ------------------------ |
+| `ollama`                   | `>=0.21.0:0`   | Backend set to Ollama    |
+| `vllm`                     | `>=0.16.0:0.1` | Backend set to vLLM      |
+| `llama-cpp`                | `>=1.0.9544:0` | Backend set to llama.cpp |
+| `simplex-websocket-bridge` | `>=0.3.0:0`    | SimpleX channel enabled  |
 
 The bridge dependency is additionally gated on its `websocket` health check, and while enabled its file-exchange directories are mounted into this container.
 
@@ -230,8 +232,8 @@ The bridge dependency is additionally gated on its `websocket` health check, and
 
 ## Health Checks
 
-| Check | Method | Success Condition |
-|-------|--------|-------------------|
+| Check         | Method                     | Success Condition   |
+| ------------- | -------------------------- | ------------------- |
 | Web Interface | HTTP check (`checkWebUrl`) | Port 18789 responds |
 
 **Grace period:** 40 seconds
@@ -256,7 +258,7 @@ The bridge dependency is additionally gated on its `websocket` health check, and
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for build instructions and development workflow.
+Build and development workflow follow the StartOS packaging guide: <https://docs.start9.com/packaging>. Keep `README.md`, `instructions.md`, and `AGENTS.md` in sync with any change to user-visible behavior or package structure.
 
 ---
 
@@ -291,7 +293,8 @@ actions:
       - xai (grok-4.3, grok-build-0.1)
       - local: ollama, vllm, llama-cpp (served-model id; models.providers.<id> pointing at <id>'s LXC-bridge api endpoint, resolved at apply time from host api-multi; ollama uses api=ollama, vllm/llama-cpp api=openai-completions)
     custom_model_field: true
-    provider_key_envs: [ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, XAI_API_KEY]
+    provider_key_envs:
+      [ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, XAI_API_KEY]
   - id: set-password
     name: Set Password
     has_input: false
@@ -311,13 +314,13 @@ actions:
     name: Configure SimpleX
     has_input: true
     group: Channels
-    installs_plugin: "@dangoldbj/openclaw-simplex (exact pin, min 1.8.0; installed at runtime via openclaw plugins install, skipped when already >= min)"
+    installs_plugin: '@dangoldbj/openclaw-simplex (exact pin, min 1.8.0; installed at runtime via openclaw plugins install, skipped when already >= min)'
 
 dependencies: # optional
-  ollama: ">=0.21.0:0" # flipped to running by Configure AI Provider
-  vllm: ">=0.16.0:0.1" # flipped to running by Configure AI Provider
-  llama-cpp: ">=1.0.9544:0" # flipped to running by Configure AI Provider
-  simplex-websocket-bridge: ">=0.3.0:0" # flipped to running by Configure SimpleX; gated on its websocket health check; file-exchange dirs mounted while enabled
+  ollama: '>=0.21.0:0' # flipped to running by Configure AI Provider
+  vllm: '>=0.16.0:0.1' # flipped to running by Configure AI Provider
+  llama-cpp: '>=1.0.9544:0' # flipped to running by Configure AI Provider
+  simplex-websocket-bridge: '>=0.3.0:0' # flipped to running by Configure SimpleX; gated on its websocket health check; file-exchange dirs mounted while enabled
 
 auto_configure:
   - start-cli host URL
