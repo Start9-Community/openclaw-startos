@@ -117,6 +117,7 @@ const dict = {
   'Could not install the SimpleX plugin': 90,
   'Could not uninstall the SimpleX plugin: ': 91,
   'The SimpleX Websocket Bridge is not reachable on the internal network. Make sure it is installed and running, then try again.': 92,
+  'Submit Configure SimpleX to upgrade the SimpleX plugin': 93,
 } as const
 
 /**

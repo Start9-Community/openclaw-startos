@@ -59,7 +59,7 @@ export const loginToOs = sdk.Action.withInput(
       async (subc) => {
         await installRootCA(effects, subc)
         return subc.exec(['start-cli', 'auth', 'login'], {
-          user: 'root',
+          user: 'node',
           env: { HOME: '/data', PASSWORD: input.masterPassword },
         })
       },

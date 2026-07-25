@@ -96,6 +96,22 @@ const modelsSchema = z.object({
     .catch(undefined),
 })
 
+// Plugin policy (openclaw.json `plugins`). `openclaw plugins install` maintains
+// these itself, but Configure SimpleX has to repair them when it skips the
+// install (plugin already at/above the pinned version): an installed plugin
+// still needs `entries.<id>.enabled` to load, and a restrictive `allow` list
+// still has to name it.
+const pluginsSchema = z.object({
+  allow: z.array(z.string()).optional().catch(undefined),
+  entries: z
+    .record(
+      z.string(),
+      z.object({ enabled: z.boolean().optional().catch(undefined) }),
+    )
+    .optional()
+    .catch(undefined),
+})
+
 const shape = z.object({
   gateway: gatewaySchema.catch(() => gatewaySchema.parse({})),
   agents: z
@@ -114,6 +130,7 @@ const shape = z.object({
     })
     .optional()
     .catch(undefined),
+  plugins: pluginsSchema.optional().catch(undefined),
 })
 
 export const openclawJson = FileHelper.json(

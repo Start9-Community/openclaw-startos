@@ -4,7 +4,7 @@ OpenClaw runs an LLM of your choosing. On its own it's a chat agent with no acce
 
 ## Documentation
 
-- [Messaging channels](https://docs.openclaw.ai/channels) — connecting Telegram, WhatsApp, and other chat platforms to your agent.
+- [Messaging channels](https://docs.openclaw.ai/channels) — connecting Telegram, WhatsApp, SimpleX, and other chat platforms to your agent.
 - [Personality and identity](https://docs.openclaw.ai/pi) — shaping how your agent behaves through the workspace files (SOUL, IDENTITY, MEMORY, HEARTBEAT).
 - [Tools](https://docs.openclaw.ai/tools) — the toolset the agent can call.
 - [Models](https://docs.openclaw.ai/models) — supported LLM providers and how model selection and fallback work.
@@ -37,10 +37,13 @@ The Web UI is the OpenClaw Gateway control panel and WebChat. You'll land in a c
 
 ### Channels
 
-OpenClaw can listen on several messaging platforms in addition to the Web UI. Two are wired up as StartOS actions; the rest are configured through the upstream channels documentation.
+OpenClaw can listen on several messaging platforms in addition to the Web UI. Three are wired up as StartOS actions; the rest are configured through the upstream channels documentation.
 
 - **Connect Telegram** — paste a bot token from [@BotFather](https://t.me/BotFather), pick a DM policy (Pairing approves new senders with a one-time code, Open accepts anyone), and restart the service for the change to take effect. After that, DM the bot to chat with your agent.
 - **Connect WhatsApp** — pick a DM policy (Allowlist with comma-separated phone numbers in international format, or Open) and run the action; it returns a QR code. Scan it from WhatsApp under **Settings → Linked Devices → Link a Device**. The service must be running to run this action.
+- **Configure SimpleX** — chat with your agent over [SimpleX](https://simplex.chat), a messenger with no user identifiers. This one needs a companion service: install **SimpleX Websocket Bridge** from the Marketplace (Community Registry) first and make sure it's running, since the bridge holds the SimpleX identity your agent talks through. Then set this action to **Enabled**, pick a DM policy (Pairing or Open), and submit. It installs the OpenClaw SimpleX plugin for you, which can take a few minutes. Setting the action to **Disabled** removes the channel and uninstalls the plugin.
+
+  If a later package update needs a newer version of the OpenClaw SimpleX plugin, a task reappears on the Dashboard asking you to submit **Configure SimpleX** again; that upgrade is the only thing it does.
 
 ### Configuration actions
 
@@ -54,4 +57,4 @@ OpenClaw can listen on several messaging platforms in addition to the Web UI. Tw
 - **Privacy.** With a cloud provider (Anthropic, OpenAI, Google, xAI), every prompt is forwarded to that provider — treat anything you type as visible to them. Choose a local backend (Ollama, vLLM, llama.cpp) to keep inference on your server.
 - **Destructive capability.** Once **Login to StartOS** is complete the agent can run commands that uninstall services, change configuration, or render the server unusable. There is no built-in confirmation step; if you want a guardrail, don't run Login to StartOS. If you already granted access, run **Revoke StartOS Access** to remove the stored authentication.
 - **Voice features and browser automation** advertised in the upstream docs are not available in this package — there is no companion app and no display attached to the container.
-- **Channels beyond Telegram and WhatsApp** (Slack, Discord, Signal, Matrix, etc.) are not wired into StartOS actions. Configure them by editing the gateway configuration following the upstream channels documentation.
+- **Channels beyond Telegram, WhatsApp, and SimpleX** (Slack, Discord, Signal, Matrix, etc.) are not wired into StartOS actions. Configure them by editing the gateway configuration following the upstream channels documentation.
