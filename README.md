@@ -82,8 +82,8 @@ On install/update/restore:
 On every startup:
 
 1. Updates `start-cli` config with current StartOS server IP
-2. Sets file ownership (`chown` on `/data`)
-3. Starts the gateway daemon
+2. Re-asserts `node`-ownership of `/data` (`chown -R node:node`, run as root) so OpenClaw's state, config, and plugins are owned by the `node` uid (1000) the gateway runs as
+3. Starts the gateway daemon **as `node`** — matching OpenClaw's official image; its plugin loader only accepts plugins owned by the gateway's own uid, so plugin installs run as `node` too
 4. After gateway is ready: checks `start-cli` login status — creates **important task** "Login to StartOS" if not authenticated; and if the SimpleX channel is enabled, creates **important task** "Configure SimpleX" when its plugin is missing or below the minimum supported version
 5. Captures a server state snapshot to `MEMORY.md` (server metrics, packages, notifications, network, disk info)
 

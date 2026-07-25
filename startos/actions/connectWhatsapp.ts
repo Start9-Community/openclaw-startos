@@ -79,6 +79,7 @@ export const connectWhatsapp = sdk.Action.withInput(
       'whatsapp-login',
       async (subc) => {
         return subc.exec(['openclaw', 'channels', 'login'], {
+          user: 'node',
           env: {
             HOME: '/data',
             OPENCLAW_STATE_DIR: '/data/.openclaw',

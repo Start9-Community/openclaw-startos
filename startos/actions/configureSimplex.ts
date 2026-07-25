@@ -66,9 +66,11 @@ function installedPluginVersion(listStdout: string): string | undefined {
 
 const CLI_ENV = { HOME: '/data', OPENCLAW_STATE_DIR: '/data/.openclaw' }
 
-// `subc.exec`'s default 30s timeout SIGKILLs the plugin install mid-download
-// (it also resolves the large `openclaw` peer from npm). npm's own timeout is
-// >=300s, so go above that.
+// Runs openclaw as `node` (uid 1000) so the installed plugin tree is node-owned
+// and the node gateway loads it — a root-owned install is blocked by OpenClaw's
+// ownership policy. The high timeout clears `subc.exec`'s 30s default, which
+// would SIGKILL the npm download mid-flight (it resolves the large `openclaw`
+// peer, and npm's own timeout is >=300s).
 async function runOpenclawCli(
   effects: Parameters<Parameters<typeof sdk.Action.withInput>[3]>[0]['effects'],
   name: string,
@@ -81,7 +83,11 @@ async function runOpenclawCli(
     mainMounts(),
     name,
     async (subc) =>
-      subc.exec(['openclaw', ...args], { env: CLI_ENV }, timeoutMs),
+      subc.exec(
+        ['openclaw', ...args],
+        { user: 'node', env: CLI_ENV },
+        timeoutMs,
+      ),
   )
 }
 
@@ -95,7 +101,7 @@ async function readInstalledPlugin(
 ): Promise<{ probed: boolean; version?: string }> {
   const list = await subcontainer.exec(
     ['openclaw', 'plugins', 'list', '--json'],
-    { env: CLI_ENV },
+    { user: 'node', env: CLI_ENV },
   )
   if (list.exitCode !== 0) return { probed: false }
   return {
