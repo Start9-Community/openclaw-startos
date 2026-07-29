@@ -14,9 +14,7 @@ export const taskConfigureApi = sdk.setupOnInit(async (effects, kind) => {
       configureApiCredentials,
       'critical',
       {
-        reason: i18n(
-          'Configure your AI provider credentials to use OpenClaw',
-        ),
+        reason: i18n('Configure your AI provider credentials to use OpenClaw'),
       },
     )
   }

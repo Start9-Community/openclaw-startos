@@ -1,6 +1,6 @@
 FROM node:22-bookworm-slim
 
-ARG STARTOS_VERSION
+ARG START_CLI_VERSION
 ARG GH_VERSION=2.96.0
 ARG OPENCLAW_VERSION=2026.7.1
 
@@ -29,8 +29,9 @@ ENV HOME=/opt/openclaw-home
 RUN mkdir -p /opt/openclaw-home && \
     curl -fsSL https://openclaw.bot/install.sh | bash -s -- --no-prompt --no-onboard --version "${OPENCLAW_VERSION}"
 
-# Install start-cli from StartOS release
-RUN curl -fsSL "https://github.com/Start9Labs/start-os/releases/download/v${STARTOS_VERSION}/start-cli_$(uname -m)-linux" -o /usr/local/bin/start-cli \
+# Install start-cli from its product-scoped release in the start-technologies
+# monorepo (see UPDATING.md). Authenticated at runtime by "Login to StartOS".
+RUN curl -fsSL "https://github.com/Start9Labs/start-technologies/releases/download/start-cli%2Fv${START_CLI_VERSION}/start-cli_$(uname -m)-linux" -o /usr/local/bin/start-cli \
     && chmod +x /usr/local/bin/start-cli
 
 # Stage skill files (loaded via extraDirs in openclaw.json)

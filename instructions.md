@@ -50,7 +50,7 @@ OpenClaw can listen on several messaging platforms in addition to the Web UI. Th
 - **Reset Password** — re-runs Set Password to rotate the gateway auth token. The new password is shown once.
 - **Configure AI Provider** — re-run any time to switch providers, change models, rotate API keys, or add/remove a fallback. The form is pre-filled with your current provider and model; API keys are never shown, so leave a key blank to keep the one already saved.
 - **Login to StartOS** — re-run if `start-cli` ever loses its session (a task automatically reappears on the Dashboard if the package detects it isn't authenticated).
-- **Revoke StartOS Access** — removes OpenClaw's stored `start-cli` authentication, cutting off server administration without uninstalling the service. Run *Login to StartOS* again to grant it back.
+- **Revoke StartOS Access** — un-enrolls OpenClaw's key from your server and deletes it, cutting off server administration without uninstalling the service, and leaving no session to clean up by hand. Run *Login to StartOS* again to grant it back.
 
 ## Limitations
 

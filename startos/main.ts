@@ -78,139 +78,141 @@ export const main = sdk.setupMain(async ({ effects }) => {
     'openclaw-sub',
   )
 
-  return sdk.Daemons.of(effects)
-    .addOneshot('install-root-ca', {
-      subcontainer: openclawSub,
-      exec: {
-        fn: async (subcontainer) => {
-          await installRootCA(effects, subcontainer)
-          return null
+  return (
+    sdk.Daemons.of(effects)
+      .addOneshot('install-root-ca', {
+        subcontainer: openclawSub,
+        exec: {
+          fn: async (subcontainer) => {
+            await installRootCA(effects, subcontainer)
+            return null
+          },
         },
-      },
-      requires: [],
-    })
-    // OpenClaw runs as `node` (uid 1000) and expects its state/plugins owned by
-    // that uid, so /data is node-owned and every openclaw/start-cli exec runs as
-    // node. Only root can chown, so this oneshot (and the CA install) stay root.
-    .addOneshot('chown', {
-      subcontainer: openclawSub,
-      exec: {
-        command: ['chown', '-R', 'node:node', '/data'],
-        user: 'root',
-      },
-      requires: [],
-    })
-    .addDaemon('primary', {
-      subcontainer: openclawSub,
-      exec: {
-        command: [
-          'openclaw',
-          'gateway',
-          '--port',
-          uiPort.toString(),
-          '--bind',
-          'lan',
-          '--verbose',
-          '--allow-unconfigured',
-        ],
-        user: 'node',
-        env: {
-          HOME: '/data',
-          OPENCLAW_STATE_DIR: '/data/.openclaw',
-          NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt',
-          ...providerKeyEnv,
+        requires: [],
+      })
+      // OpenClaw runs as `node` (uid 1000) and expects its state/plugins owned by
+      // that uid, so /data is node-owned and every openclaw/start-cli exec runs as
+      // node. Only root can chown, so this oneshot (and the CA install) stay root.
+      .addOneshot('chown', {
+        subcontainer: openclawSub,
+        exec: {
+          command: ['chown', '-R', 'node:node', '/data'],
+          user: 'root',
         },
-      },
-      ready: {
-        display: i18n('Web Interface'),
-        fn: () =>
-          uiUrl
-            ? sdk.healthCheck.checkWebUrl(effects, uiUrl, {
-                successMessage: i18n('OpenClaw Gateway is ready'),
-                errorMessage: i18n('OpenClaw Gateway is not ready'),
+        requires: [],
+      })
+      .addDaemon('primary', {
+        subcontainer: openclawSub,
+        exec: {
+          command: [
+            'openclaw',
+            'gateway',
+            '--port',
+            uiPort.toString(),
+            '--bind',
+            'lan',
+            '--verbose',
+            '--allow-unconfigured',
+          ],
+          user: 'node',
+          env: {
+            HOME: '/data',
+            OPENCLAW_STATE_DIR: '/data/.openclaw',
+            NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/ca-certificates.crt',
+            ...providerKeyEnv,
+          },
+        },
+        ready: {
+          display: i18n('Web Interface'),
+          fn: () =>
+            uiUrl
+              ? sdk.healthCheck.checkWebUrl(effects, uiUrl, {
+                  successMessage: i18n('OpenClaw Gateway is ready'),
+                  errorMessage: i18n('OpenClaw Gateway is not ready'),
+                })
+              : Promise.resolve({
+                  result: 'starting' as const,
+                  message: i18n('OpenClaw Gateway is not ready'),
+                }),
+          gracePeriod: 40_000,
+        },
+        requires: ['install-root-ca', 'chown'],
+      })
+      .addOneshot('check-login', {
+        subcontainer: openclawSub,
+        exec: {
+          fn: async (subcontainer) => {
+            const result = await subcontainer.exec(
+              ['start-cli', 'auth', 'session', 'list'],
+              { user: 'node', env: { HOME: '/data' } },
+            )
+            if (result.exitCode !== 0) {
+              await sdk.action.createOwnTask(effects, loginToOs, 'important', {
+                reason: i18n(
+                  'Login to StartOS to enable start-cli authentication for managing the server',
+                ),
               })
-            : Promise.resolve({
-                result: 'starting' as const,
-                message: i18n('OpenClaw Gateway is not ready'),
-              }),
-        gracePeriod: 40_000,
-      },
-      requires: ['install-root-ca', 'chown'],
-    })
-    .addOneshot('check-login', {
-      subcontainer: openclawSub,
-      exec: {
-        fn: async (subcontainer) => {
-          const result = await subcontainer.exec(
-            ['start-cli', 'auth', 'session', 'list'],
-            { user: 'node', env: { HOME: '/data' } },
-          )
-          if (result.exitCode !== 0) {
-            await sdk.action.createOwnTask(effects, loginToOs, 'important', {
-              reason: i18n(
-                'Login to StartOS to enable start-cli authentication for managing the server',
-              ),
-            })
-          }
-          return null
+            }
+            return null
+          },
         },
-      },
-      requires: ['primary'],
-    })
-    .addOneshot('check-simplex-plugin', {
-      subcontainer: openclawSub,
-      exec: {
-        fn: (subcontainer) =>
-          requestSimplexPluginUpgrade(effects, subcontainer),
-      },
-      requires: ['primary'],
-    })
-    .addOneshot('server-state-snapshot', {
-      subcontainer: openclawSub,
-      exec: {
-        fn: async (subcontainer) => {
-          const execOpts = { user: 'node' as const, env: { HOME: '/data' } }
-          const commands: [string, string[]][] = [
-            ['Server Metrics', ['start-cli', 'server', 'metrics']],
-            ['Server Time', ['start-cli', 'server', 'time']],
-            ['Package List', ['start-cli', 'package', 'list']],
-            ['Package Stats', ['start-cli', 'package', 'stats']],
-            ['Notifications', ['start-cli', 'notification', 'list']],
-            ['Network Gateways', ['start-cli', 'net', 'gateway', 'list']],
-            ['Disk List', ['start-cli', 'disk', 'list']],
-            ['Backup Targets', ['start-cli', 'backup', 'target', 'list']],
-          ]
-
-          const sections: string[] = []
-          for (const [label, cmd] of commands) {
-            const result = await subcontainer.exec(cmd, execOpts)
-            const output =
-              result.exitCode === 0
-                ? String(result.stdout).trim() || '_No output_'
-                : `_Command failed (exit ${result.exitCode}): ${String(result.stderr).trim()}_`
-            sections.push(`### ${label}\n\n\`\`\`\n${output}\n\`\`\``)
-          }
-
-          const stateBlock =
-            '## Server State Snapshot\n\n' +
-            `_Captured at startup: ${new Date().toISOString()}_\n\n` +
-            sections.join('\n\n') +
-            '\n'
-
-          const memoryPath = sdk.volumes.main.subpath(
-            '.openclaw/workspace/MEMORY.md',
-          )
-          const existing = await readFile(memoryPath, 'utf-8').catch(() => '')
-          const marker = '## Server State Snapshot'
-          const idx = existing.indexOf(marker)
-          const before =
-            idx >= 0 ? existing.slice(0, idx).trimEnd() : existing.trimEnd()
-          const updated = before ? before + '\n\n' + stateBlock : stateBlock
-          await writeFile(memoryPath, updated)
-
-          return null
+        requires: ['primary'],
+      })
+      .addOneshot('check-simplex-plugin', {
+        subcontainer: openclawSub,
+        exec: {
+          fn: (subcontainer) =>
+            requestSimplexPluginUpgrade(effects, subcontainer),
         },
-      },
-      requires: ['primary', 'check-login'],
-    })
+        requires: ['primary'],
+      })
+      .addOneshot('server-state-snapshot', {
+        subcontainer: openclawSub,
+        exec: {
+          fn: async (subcontainer) => {
+            const execOpts = { user: 'node' as const, env: { HOME: '/data' } }
+            const commands: [string, string[]][] = [
+              ['Server Metrics', ['start-cli', 'server', 'metrics']],
+              ['Server Time', ['start-cli', 'server', 'time']],
+              ['Package List', ['start-cli', 'package', 'list']],
+              ['Package Stats', ['start-cli', 'package', 'stats']],
+              ['Notifications', ['start-cli', 'notification', 'list']],
+              ['Network Gateways', ['start-cli', 'net', 'gateway', 'list']],
+              ['Disk List', ['start-cli', 'disk', 'list']],
+              ['Backup Targets', ['start-cli', 'backup', 'target', 'list']],
+            ]
+
+            const sections: string[] = []
+            for (const [label, cmd] of commands) {
+              const result = await subcontainer.exec(cmd, execOpts)
+              const output =
+                result.exitCode === 0
+                  ? String(result.stdout).trim() || '_No output_'
+                  : `_Command failed (exit ${result.exitCode}): ${String(result.stderr).trim()}_`
+              sections.push(`### ${label}\n\n\`\`\`\n${output}\n\`\`\``)
+            }
+
+            const stateBlock =
+              '## Server State Snapshot\n\n' +
+              `_Captured at startup: ${new Date().toISOString()}_\n\n` +
+              sections.join('\n\n') +
+              '\n'
+
+            const memoryPath = sdk.volumes.main.subpath(
+              '.openclaw/workspace/MEMORY.md',
+            )
+            const existing = await readFile(memoryPath, 'utf-8').catch(() => '')
+            const marker = '## Server State Snapshot'
+            const idx = existing.indexOf(marker)
+            const before =
+              idx >= 0 ? existing.slice(0, idx).trimEnd() : existing.trimEnd()
+            const updated = before ? before + '\n\n' + stateBlock : stateBlock
+            await writeFile(memoryPath, updated)
+
+            return null
+          },
+        },
+        requires: ['primary', 'check-login'],
+      })
+  )
 })

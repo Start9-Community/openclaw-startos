@@ -4,8 +4,8 @@ import { sdk } from './sdk'
 
 export const uiPort = 18789
 
-// StartOS version for start-cli - update this to match your target StartOS version
-export const STARTOS_VERSION = '0.4.0-alpha.20'
+// start-cli release whose binary the image installs (see UPDATING.md).
+export const START_CLI_VERSION = '1.1.0'
 
 export function mainMounts() {
   return sdk.Mounts.of().mountVolume({
