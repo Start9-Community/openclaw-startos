@@ -15,9 +15,7 @@ export const setPassword = sdk.Action.withoutInput(
       name: hasPass ? i18n('Reset Password') : i18n('Set Password'),
       description: hasPass
         ? i18n('Reset your OpenClaw gateway password')
-        : i18n(
-            'Set the gateway password needed to log in to the Control UI',
-          ),
+        : i18n('Set the gateway password needed to log in to the Control UI'),
       warning: null,
       allowedStatuses: 'any',
       group: null,
@@ -38,9 +36,7 @@ export const setPassword = sdk.Action.withoutInput(
     return {
       version: '1' as const,
       title: i18n('Password Set'),
-      message: i18n(
-        'Use this password to log in to the OpenClaw Control UI.',
-      ),
+      message: i18n('Use this password to log in to the OpenClaw Control UI.'),
       result: {
         type: 'single' as const,
         value: password,

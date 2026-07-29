@@ -1,5 +1,5 @@
 import { setupManifest } from '@start9labs/start-sdk'
-import { STARTOS_VERSION } from '../utils'
+import { START_CLI_VERSION } from '../utils'
 import { long, short } from './i18n'
 
 export const manifest = setupManifest({
@@ -18,7 +18,7 @@ export const manifest = setupManifest({
         dockerBuild: {
           workdir: '.',
           buildArgs: {
-            STARTOS_VERSION,
+            START_CLI_VERSION,
           },
         },
       },

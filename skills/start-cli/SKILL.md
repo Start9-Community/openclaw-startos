@@ -40,8 +40,7 @@ All commands accept these global options:
 | `--registry-hostname <HOSTNAME>` | Registry hostname                             |
 | `-t, --tunnel <TUNNEL>`          | Tunnel configuration                          |
 | `-p, --proxy <PROXY>`            | Proxy configuration                           |
-| `--cookie-path <PATH>`           | Path to auth cookie                           |
-| `--developer-key-path <PATH>`    | Path to developer key                         |
+| `--id-key-path <PATH>`           | Path to the CLI identity key (deprecated alias: `--developer-key-path`) |
 | `--root-ca <PEM_PATH>`           | PEM root CA(s) to trust for a self-signed StartOS cert (repeatable) — e.g. right after `setup complete`, before the device's CA is imported |
 | `--insecure`                     | Skip TLS verification entirely — bring-up only, never over the public internet |
 | `--s9pk-s3base <URL>`            | Base URL for publishing s9pks (packaging)     |

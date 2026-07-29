@@ -171,7 +171,7 @@ The selected model is the default; change it anytime from Web UI chat with the `
 | Input        | None                    |
 | Output       | None                    |
 
-Removes OpenClaw's stored `start-cli` authentication (the `.cookies.json` saved on the data volume), cutting off server-administration access without uninstalling the service. Run **Login to StartOS** again to grant access back.
+Un-enrolls OpenClaw's `start-cli` identity key from the server (best-effort) and deletes it from the data volume (`.startos/id.key.pem`), cutting off server-administration access without uninstalling the service. Run **Login to StartOS** again to grant access back.
 
 ### Connect Telegram
 
