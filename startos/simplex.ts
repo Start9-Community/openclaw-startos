@@ -1,6 +1,7 @@
 import { T } from '@start9labs/start-sdk'
 import { sdk } from './sdk'
 import { simplexJson } from './fileModels/simplex.json'
+import { openclawJson } from './fileModels/openclaw.json'
 import { mainMounts } from './utils'
 
 // Optional SimpleX Websocket Bridge integration: wires the dependency + file
@@ -24,26 +25,71 @@ export const BRIDGE_OUTBOUND_DIR = '/data/.simplex/outbound'
 const BRIDGE_WS_HOST_ID = 'main'
 const BRIDGE_WS_INTERFACE_ID = 'ws'
 
+/** The bridge's `ws` interface over the LXC bridge, as a watchable value. */
+function bridgeWs(effects: T.Effects) {
+  return sdk.host.get(
+    effects,
+    { hostId: BRIDGE_WS_HOST_ID, packageId: SIMPLEX_BRIDGE_ID },
+    (host) => {
+      const iface =
+        host &&
+        Object.values(host.bindings)
+          .flatMap((b) => Object.values(b.interfaces))
+          .find((i) => i.id === BRIDGE_WS_INTERFACE_ID)
+      return iface
+        ? iface.addressInfo
+            .filter({ kind: 'bridge', predicate: (h) => !h.ssl })
+            .format('urlstring')[0]
+        : undefined
+    },
+  )
+}
+
 /** `ws://<bridge-ip>:5225`, or undefined if the bridge isn't reachable. */
 export function bridgeWsUrl(effects: T.Effects): Promise<string | undefined> {
-  return sdk.host
-    .get(
-      effects,
-      { hostId: BRIDGE_WS_HOST_ID, packageId: SIMPLEX_BRIDGE_ID },
-      (host) => {
-        const iface =
-          host &&
-          Object.values(host.bindings)
-            .flatMap((b) => Object.values(b.interfaces))
-            .find((i) => i.id === BRIDGE_WS_INTERFACE_ID)
-        return iface
-          ? iface.addressInfo
-              .filter({ kind: 'bridge', predicate: (h) => !h.ssl })
-              .format('urlstring')[0]
-          : undefined
-      },
-    )
+  return bridgeWs(effects).once()
+}
+
+/** Write `wsUrl` into the channel config, unless it's already what's there. */
+async function applyWsUrl(
+  effects: T.Effects,
+  wsUrl: string | undefined,
+): Promise<void> {
+  // An unresolvable address means the bridge is gone or stopped, not that it
+  // moved — leave the last known good value rather than blanking the config.
+  if (!wsUrl) return
+
+  const stored = await openclawJson
+    .read((c) => c?.channels?.['openclaw-simplex']?.connection?.wsUrl)
     .once()
+  if (stored === wsUrl) return
+
+  await openclawJson.merge(effects, {
+    channels: { 'openclaw-simplex': { connection: { wsUrl } } },
+  })
+  console.info(`SimpleX bridge address changed; wsUrl updated to ${wsUrl}`)
+}
+
+/**
+ * Bind the channel's `wsUrl` to the bridge's current address.
+ *
+ * openclaw.json holds the address as a literal, written when Configure SimpleX
+ * was submitted, so it goes stale if the bridge's address moves.
+ *
+ * Read as a `const`, so a changed address re-runs `main` and restarts the
+ * service. The restart is wanted here, not merely tolerated: the address only
+ * changes when the bridge is **reinstalled** — stop/start and Rebuild keep it —
+ * and a reinstall also replaces the volume directory behind our file-exchange
+ * mounts, which nothing but a restart re-establishes. Rewriting the config alone
+ * would reconnect the channel while leaving file exchange silently broken.
+ *
+ * The `map` in `bridgeWs` narrows reactivity to the URL string, so unrelated
+ * changes to the bridge's host record don't restart us.
+ */
+export async function watchSimplexAddress(effects: T.Effects): Promise<void> {
+  if (!(await enabledOnce())) return
+
+  await applyWsUrl(effects, await bridgeWs(effects).const())
 }
 
 function enabledReactive(effects: T.Effects): Promise<boolean> {
