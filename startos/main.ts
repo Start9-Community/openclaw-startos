@@ -7,7 +7,7 @@ import { i18n } from './i18n'
 import { uiHostId, uiInterfaceId } from './interfaces'
 import { sdk } from './sdk'
 import { mainMounts, uiPort } from './utils'
-import { withSimplexMounts } from './simplex'
+import { watchSimplexAddress, withSimplexMounts } from './simplex'
 import { requestSimplexPluginUpgrade } from './actions/configureSimplex'
 
 // Maps each provider's auth-profile id to the env var OpenClaw reads its API
@@ -69,6 +69,12 @@ export const main = sdk.setupMain(async ({ effects }) => {
   let mounts = mainMounts()
   for (const appendMounts of mountIntegrations) {
     mounts = await appendMounts(effects, mounts)
+  }
+
+  // Let each optional integration set up watchers for its dependencies.
+  const addressWatchers = [watchSimplexAddress]
+  for (const watch of addressWatchers) {
+    await watch(effects)
   }
 
   const openclawSub = sdk.SubContainer.of(
