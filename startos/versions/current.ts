@@ -1,13 +1,13 @@
 import { VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '2026.7.1:6',
+  version: '2026.7.1:7',
   releaseNotes: {
-    en_US: `The SimpleX channel now follows address changes automatically. Previously, reinstalling the bridge would leave the channel unable to connect until you re-submitted the 'Configure' action; OpenClaw now picks up the new address and restarts itself.`,
-    es_ES: `El canal de SimpleX ahora sigue los cambios de dirección automáticamente. Antes, reinstalar el puente dejaba el canal sin poder conectarse hasta que volvías a enviar la acción «Configurar»; ahora OpenClaw detecta la nueva dirección y se reinicia solo.`,
-    de_DE: `Der SimpleX-Kanal folgt Adressänderungen jetzt automatisch. Bisher konnte sich der Kanal nach dem Neuinstallieren der Bridge nicht mehr verbinden, bis die Aktion „Konfigurieren“ erneut abgesendet wurde; OpenClaw übernimmt die neue Adresse nun und startet sich selbst neu.`,
-    pl_PL: `Kanał SimpleX automatycznie podąża teraz za zmianami adresu. Wcześniej po ponownej instalacji mostu kanał nie mógł się połączyć, dopóki nie wysłałeś ponownie akcji „Konfiguruj”; teraz OpenClaw pobiera nowy adres i sam się restartuje.`,
-    fr_FR: `Le canal SimpleX suit désormais automatiquement les changements d'adresse. Auparavant, réinstaller le pont empêchait le canal de se connecter tant que l'action « Configurer » n'était pas resoumise ; OpenClaw récupère maintenant la nouvelle adresse et redémarre de lui-même.`,
+    en_US: `Updated OpenClaw to its 2026.7.1-2 correction release, which fixes installing and updating tracked official plugins under newer npm clients. The bundled GitHub CLI is now 2.97.0.`,
+    es_ES: `Se actualizó OpenClaw a su versión correctiva 2026.7.1-2, que corrige la instalación y actualización de los complementos oficiales bajo clientes npm más recientes. La CLI de GitHub incluida ahora es 2.97.0.`,
+    de_DE: `OpenClaw wurde auf die Korrekturversion 2026.7.1-2 aktualisiert, die das Installieren und Aktualisieren offizieller Plugins unter neueren npm-Clients behebt. Die mitgelieferte GitHub-CLI ist jetzt 2.97.0.`,
+    pl_PL: `Zaktualizowano OpenClaw do wydania poprawkowego 2026.7.1-2, które naprawia instalowanie i aktualizowanie oficjalnych wtyczek w nowszych klientach npm. Dołączone CLI GitHuba ma teraz wersję 2.97.0.`,
+    fr_FR: `OpenClaw a été mis à jour vers sa version corrective 2026.7.1-2, qui corrige l'installation et la mise à jour des plugins officiels suivis avec les clients npm récents. Le CLI GitHub intégré passe à 2.97.0.`,
   },
   migrations: {
     up: async ({ effects }) => {},

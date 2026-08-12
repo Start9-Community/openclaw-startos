@@ -6,11 +6,19 @@ OpenClaw is installed into the image at build time by the official `openclaw.bot
 
 ## Determining the upstream version
 
-- **OpenClaw** — canonical home: [openclaw/openclaw](https://github.com/openclaw/openclaw) (the `upstreamRepo`).
+- **OpenClaw** — canonical home: [openclaw/openclaw](https://github.com/openclaw/openclaw) (the `upstreamRepo`). Ask npm, not GitHub: the installer resolves the version through npm, and upstream maintains several release lines at once (`extended-stable` on the older series, `beta` on the next one), so the newest GitHub tag by date is routinely *not* the one to pin.
+
   ```
-  gh release view -R openclaw/openclaw --json tagName -q .tagName
+  curl -s https://registry.npmjs.org/openclaw | jq -r '."dist-tags".latest'
   ```
-  Tags are of the form `vYYYY.M.D` (e.g. `v2026.5.18`); strip the leading `v` for the pin. Skip pre-releases (`-beta.N`, `-rc.N`). Pin lives in `Dockerfile` as `OPENCLAW_VERSION`.
+
+  Pin that value verbatim in `Dockerfile` as `OPENCLAW_VERSION`. Never pin a `beta`/`alpha` dist-tag.
+
+  > [!WARNING]
+  > **A `-N` suffix is a post-release correction upstream, but a *pre*-release to ExVer — never let it into the package version.**
+  > Upstream ships fixes to an already-released version as `X.Y.Z-1`, `X.Y.Z-2`, … and moves the npm `latest` dist-tag onto them. ExVer reads that suffix as a prerelease and orders it *below* plain `X.Y.Z`, so a package version of `2026.7.1-2:0` sorts under the published `2026.7.1:6` and StartOS would never offer it as an update.
+  >
+  > So the two version strings deliberately diverge: `OPENCLAW_VERSION` carries the full correction tag, while `startos/versions/current.ts` stays on the base upstream version and takes a downstream bump (`2026.7.1:6` → `2026.7.1:7`). Only a new *base* version (`2026.8.1`) resets the downstream revision to `:0`.
 
 - **GitHub CLI (`gh`)** — canonical home: [cli/cli](https://github.com/cli/cli).
   ```
@@ -20,10 +28,10 @@ OpenClaw is installed into the image at build time by the official `openclaw.bot
 
 ## Applying the bump
 
-- **OpenClaw** — edit `Dockerfile` and update the `OPENCLAW_VERSION` ARG default to the new version (no `v` prefix).
+- **OpenClaw** — edit `Dockerfile` and update the `OPENCLAW_VERSION` ARG default to the npm `latest` value (no `v` prefix), keeping any `-N` correction suffix. Then set `startos/versions/current.ts` per the warning above — base version only, downstream bumped.
 - **GitHub CLI** — edit `Dockerfile` and update the `GH_VERSION` ARG default to the new version (no `v` prefix).
 
-After editing, confirm with `grep -rn '<OLD_VERSION>' --include='*.ts' --include=Dockerfile` that no stale references remain, then bump `version` and update `releaseNotes` in `startos/versions/current.ts` per the package's versioning conventions.
+After editing, confirm with `grep -rn '<OLD_VERSION>' --include='*.ts' --include=Dockerfile` that no stale references remain, then update `releaseNotes` in `startos/versions/current.ts` per the package's versioning conventions.
 
 ## The baked `start-cli` (`START_CLI_VERSION`)
 
