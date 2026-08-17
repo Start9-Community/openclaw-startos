@@ -6,7 +6,7 @@ OpenClaw is installed into the image at build time by the official `openclaw.bot
 
 ## Determining the upstream version
 
-- **OpenClaw** — canonical home: [openclaw/openclaw](https://github.com/openclaw/openclaw) (the `upstreamRepo`). Ask npm, not GitHub: the installer resolves the version through npm, and upstream maintains several release lines at once (`extended-stable` on the older series, `beta` on the next one), so the newest GitHub tag by date is routinely *not* the one to pin.
+- **OpenClaw** — canonical home: [openclaw/openclaw](https://github.com/openclaw/openclaw) (the `upstreamRepo`). Ask npm, not GitHub: the installer resolves the version through npm, and upstream maintains several release lines at once (`extended-stable` on the older series, `beta` on the next one), so the newest GitHub tag by date is routinely _not_ the one to pin.
 
   ```
   curl -s https://registry.npmjs.org/openclaw | jq -r '."dist-tags".latest'
@@ -15,10 +15,10 @@ OpenClaw is installed into the image at build time by the official `openclaw.bot
   Pin that value verbatim in `Dockerfile` as `OPENCLAW_VERSION`. Never pin a `beta`/`alpha` dist-tag.
 
   > [!WARNING]
-  > **A `-N` suffix is a post-release correction upstream, but a *pre*-release to ExVer — never let it into the package version.**
-  > Upstream ships fixes to an already-released version as `X.Y.Z-1`, `X.Y.Z-2`, … and moves the npm `latest` dist-tag onto them. ExVer reads that suffix as a prerelease and orders it *below* plain `X.Y.Z`, so a package version of `2026.7.1-2:0` sorts under the published `2026.7.1:6` and StartOS would never offer it as an update.
+  > **A `-N` suffix is a post-release correction upstream, but a _pre_-release to ExVer — never let it into the package version.**
+  > Upstream ships fixes to an already-released version as `X.Y.Z-1`, `X.Y.Z-2`, … and moves the npm `latest` dist-tag onto them. ExVer reads that suffix as a prerelease and orders it _below_ plain `X.Y.Z`, so a package version of `2026.7.1-2:0` sorts under the published `2026.7.1:6` and StartOS would never offer it as an update.
   >
-  > So the two version strings deliberately diverge: `OPENCLAW_VERSION` carries the full correction tag, while `startos/versions/current.ts` stays on the base upstream version and takes a downstream bump (`2026.7.1:6` → `2026.7.1:7`). Only a new *base* version (`2026.8.1`) resets the downstream revision to `:0`.
+  > So the two version strings deliberately diverge: `OPENCLAW_VERSION` carries the full correction tag, while `startos/versions/current.ts` stays on the base upstream version and takes a downstream bump (`2026.7.1:6` → `2026.7.1:7`). Only a new _base_ version (`2026.8.1`) resets the downstream revision to `:0`.
 
 - **GitHub CLI (`gh`)** — canonical home: [cli/cli](https://github.com/cli/cli).
   ```

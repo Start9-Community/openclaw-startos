@@ -1,6 +1,6 @@
 # OpenClaw
 
-OpenClaw runs an LLM of your choosing. On its own it's a chat agent with no access to your server; if you grant it access (the *Login to StartOS* action) it gains root-equivalent control and can run any command. Install it on a server that holds no other services or keys you can't afford to lose.
+OpenClaw runs an LLM of your choosing. On its own it's a chat agent with no access to your server; if you grant it access (the _Login to StartOS_ action) it gains root-equivalent control and can run any command. Install it on a server that holds no other services or keys you can't afford to lose.
 
 ## Documentation
 
@@ -13,7 +13,7 @@ OpenClaw runs an LLM of your choosing. On its own it's a chat agent with no acce
 ## What you get on StartOS
 
 - **The OpenClaw Gateway**, served over the **Web UI** interface — a browser-based control panel and WebChat where you talk to your agent.
-- **`start-cli` bundled in the container**, so once you authenticate the package (see *Login to StartOS* below) the agent can manage your StartOS server directly: read service status, install or remove packages, send notifications, and so on.
+- **`start-cli` bundled in the container**, so once you authenticate the package (see _Login to StartOS_ below) the agent can manage your StartOS server directly: read service status, install or remove packages, send notifications, and so on.
 - **Workspace files preserved across upgrades.** SOUL, IDENTITY, MEMORY, and HEARTBEAT live on the package's `main` volume; MEMORY is preserved on updates while the others are kept in sync with package defaults.
 - **A persistent server snapshot in MEMORY.md** captured on each startup so the agent has fresh context about the host it's running on.
 
@@ -26,6 +26,7 @@ OpenClaw runs an LLM of your choosing. On its own it's a chat agent with no acce
    - **Local** — Ollama, vLLM, or llama.cpp running on your StartOS server: enter the served model id. Selecting one adds it as a dependency (install it from the Marketplace if you haven't) and wires it automatically — no cloud key needed, and prompts stay on your server.
 
    Optionally add a fallback provider, used automatically when the primary is rate-limited or unavailable. Change the model anytime from Web UI chat with the `/model` command.
+
 4. Open the **Web UI** interface from the Dashboard and log in with the password from **Set Password**. Confirm the WebChat loads and that you can send a prompt.
 5. Once the gateway is running you'll see an additional task: **Login to StartOS**. Run it to authenticate the bundled `start-cli` with your server — this is what lets the agent act on the host. The action asks for your StartOS master password. **This grants the agent root-equivalent access to your server. Only do this on a machine you treat as expendable.**
 
@@ -50,7 +51,7 @@ OpenClaw can listen on several messaging platforms in addition to the Web UI. Th
 - **Reset Password** — re-runs Set Password to rotate the gateway auth token. The new password is shown once.
 - **Configure AI Provider** — re-run any time to switch providers, change models, rotate API keys, or add/remove a fallback. The form is pre-filled with your current provider and model; API keys are never shown, so leave a key blank to keep the one already saved.
 - **Login to StartOS** — re-run if `start-cli` ever loses its session (a task automatically reappears on the Dashboard if the package detects it isn't authenticated).
-- **Revoke StartOS Access** — un-enrolls OpenClaw's key from your server and deletes it, cutting off server administration without uninstalling the service, and leaving no session to clean up by hand. Run *Login to StartOS* again to grant it back.
+- **Revoke StartOS Access** — un-enrolls OpenClaw's key from your server and deletes it, cutting off server administration without uninstalling the service, and leaving no session to clean up by hand. Run _Login to StartOS_ again to grant it back.
 
 ## Limitations
 
