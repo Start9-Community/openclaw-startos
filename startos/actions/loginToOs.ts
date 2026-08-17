@@ -85,8 +85,9 @@ export async function installRootCA(
   effects: T.Effects,
   subcontainer: SubContainer<typeof sdk.manifest>,
 ) {
-  const hostnames = [`${sdk.manifest.id}.startos`]
-  const certs = await sdk.getSslCertificate(effects, hostnames).const()
+  // Only the root of the chain is wanted, so the hostname requested is
+  // immaterial — but it must be one the OS still issues for.
+  const certs = await sdk.getSslCertificate(effects, ['127.0.0.1']).const()
   const [rootCa] = certs.slice(-1)
 
   await subcontainer.writeFile(

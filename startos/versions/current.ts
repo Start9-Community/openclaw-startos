@@ -1,13 +1,13 @@
 import { VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '2026.7.1:7',
+  version: '2026.7.1:8',
   releaseNotes: {
-    en_US: `Updated OpenClaw to its 2026.7.1-2 correction release, which fixes installing and updating tracked official plugins under newer npm clients. The bundled GitHub CLI is now 2.97.0.`,
-    es_ES: `Se actualizó OpenClaw a su versión correctiva 2026.7.1-2, que corrige la instalación y actualización de los complementos oficiales bajo clientes npm más recientes. La CLI de GitHub incluida ahora es 2.97.0.`,
-    de_DE: `OpenClaw wurde auf die Korrekturversion 2026.7.1-2 aktualisiert, die das Installieren und Aktualisieren offizieller Plugins unter neueren npm-Clients behebt. Die mitgelieferte GitHub-CLI ist jetzt 2.97.0.`,
-    pl_PL: `Zaktualizowano OpenClaw do wydania poprawkowego 2026.7.1-2, które naprawia instalowanie i aktualizowanie oficjalnych wtyczek w nowszych klientach npm. Dołączone CLI GitHuba ma teraz wersję 2.97.0.`,
-    fr_FR: `OpenClaw a été mis à jour vers sa version corrective 2026.7.1-2, qui corrige l'installation et la mise à jour des plugins officiels suivis avec les clients npm récents. Le CLI GitHub intégré passe à 2.97.0.`,
+    en_US: `Requests the StartOS root certificate against an address the OS still issues for, rather than the retired service-hostname form. That certificate is what lets the agent talk to your server, and it is installed on every start.`,
+    es_ES: `Solicita el certificado raíz de StartOS para una dirección que el sistema aún emite, en lugar del formato de nombre de host de servicio retirado. Ese certificado es lo que permite al agente comunicarse con tu servidor y se instala en cada arranque.`,
+    de_DE: `Fordert das StartOS-Stammzertifikat für eine Adresse an, für die das System weiterhin ausstellt, statt für die ausgemusterte Dienst-Hostnamen-Form. Dieses Zertifikat ermöglicht dem Agenten die Kommunikation mit Ihrem Server und wird bei jedem Start installiert.`,
+    pl_PL: `Żąda certyfikatu głównego StartOS dla adresu, dla którego system nadal wystawia certyfikaty, zamiast wycofanej formy nazwy hosta usługi. To właśnie ten certyfikat umożliwia agentowi komunikację z serwerem i jest instalowany przy każdym uruchomieniu.`,
+    fr_FR: `Demande le certificat racine de StartOS pour une adresse que le système délivre encore, plutôt que pour la forme de nom d'hôte de service retirée. Ce certificat est ce qui permet à l'agent de dialoguer avec votre serveur, et il est installé à chaque démarrage.`,
   },
   migrations: {
     up: async ({ effects }) => {},

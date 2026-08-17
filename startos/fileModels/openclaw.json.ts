@@ -32,6 +32,10 @@ const authSchema = z.object({
   password: z.string().optional().catch(undefined),
 })
 
+// These are z.literal, not lenient defaults. StartOS fronts the gateway on
+// addresses OpenClaw's own origin and device checks reject, so with any of them
+// off the UI refuses to authenticate at all. The compensating control is the
+// critical password task -- never weaken that instead.
 const controlUiSchema = z.object({
   enabled: z.literal(true).catch(true),
   allowInsecureAuth: z.literal(true).catch(true),
