@@ -624,7 +624,7 @@ start9-workspace/
 └── <id>-startos/ …        ← your package repos live here
 ```
 
-**`init-package "Hello World"`** normalizes the name to an id, creates `hello-world-startos/` from the bundled template (a barebones, buildable Hello World), runs `npm install`, and leaves a **`TODO.md` checklist** that takes the package from clone to release-ready. Work the `TODO.md` top to bottom.
+**`init-package "Hello World"`** normalizes the name to an id, creates `hello-world-startos/` from the bundled template (a barebones, buildable Hello World), and runs `npm install`. The guide's **New Package Checklist** takes it from clone to release-ready — work that top to bottom.
 
 Prerequisites (a developer workstation, not the StartOS server): Docker (running), Node.js v22+, `make`, `git`, `jq`, `squashfs-tools`, and `start-cli` itself. The guide's **Environment Setup** page lists them.
 
@@ -1163,14 +1163,14 @@ start-cli package logs bitcoin --follow
 
 ### Development Workflow (packaging a service)
 
-Packaging is workspace-first — scaffold, then work the generated `TODO.md` with the packaging guide (<https://docs.start9.com/packaging>). See **s9pk - Package Development** above.
+Packaging is workspace-first — scaffold, then work the guide's New Package Checklist (<https://docs.start9.com/packaging/new-package-checklist.html>). See **s9pk - Package Development** above.
 
 ```bash
 # 1. Create an AI-ready packaging workspace (clones the guide + SDK/OS source, makes a build-key)
 start-cli s9pk init-workspace start9-workspace
 cd start9-workspace
 
-# 2. Scaffold a new package (Hello World clone + TODO.md checklist), then work the TODO
+# 2. Scaffold a new package (Hello World clone), then work the New Package Checklist
 start-cli s9pk init-package "My Service"
 cd my-service-startos
 
