@@ -1,9 +1,8 @@
 import { mkdir } from 'fs/promises'
 import { openclawJson } from '../fileModels/openclaw.json'
-import { HEARTBEAT_PROMPT } from '../heartbeat'
 import { startCliConfigYaml } from '../fileModels/startCliConfig.yaml'
 import { sdk } from '../sdk'
-import { mainMounts } from '../utils'
+import { mainMounts, HEARTBEAT_PROMPT } from '../utils'
 
 export const initializeService = sdk.setupOnInit(async (effects, kind) => {
   // Get the OS IP and set url to startos/config.yaml
