@@ -5,13 +5,13 @@ import { sdk } from '../sdk'
 export const defaultAgentId = 'main'
 
 // OpenClaw profile types
-const tokenProfileShape = z.object({
+const tokenProfileShape = z.looseObject({
   type: z.literal('token'),
   provider: z.string(),
   token: z.string(),
 })
 
-const oauthProfileShape = z.object({
+const oauthProfileShape = z.looseObject({
   type: z.literal('oauth'),
   provider: z.string(),
   access: z.string(),
@@ -22,7 +22,7 @@ const oauthProfileShape = z.object({
 const profileShape = z.union([tokenProfileShape, oauthProfileShape])
 
 // The file has a top-level "profiles" key with "provider:label" entries
-const shape = z.object({
+const shape = z.looseObject({
   profiles: z.any(),
 })
 

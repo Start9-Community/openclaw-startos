@@ -13,7 +13,9 @@ const dmPolicies = {
 const inputSpec = InputSpec.of({
   dmPolicy: Value.select({
     name: i18n('DM Policy'),
-    description: i18n('How to handle direct messages from new users'),
+    description: i18n(
+      'Who can message your agent directly.\n- Allowlist: only the numbers in Allowed Phone Numbers\n- Open: anyone can message your agent',
+    ),
     default: 'allowlist',
     values: dmPolicies,
   }),
@@ -105,11 +107,11 @@ export const connectWhatsapp = sdk.Action.withInput(
         'Scan this QR code with WhatsApp (Settings > Linked Devices > Link a Device):',
       ),
       result: {
+        type: 'multiline',
         value: output,
         copyable: false,
         masked: true,
-        qr: true,
-        type: 'single',
+        qr: false,
       },
     }
   },

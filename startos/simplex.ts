@@ -92,34 +92,11 @@ export async function watchSimplexAddress(effects: T.Effects): Promise<void> {
   await applyWsUrl(effects, await bridgeWs(effects).const())
 }
 
-function enabledReactive(effects: T.Effects): Promise<boolean> {
-  return simplexJson
-    .read((c) => c)
-    .const(effects)
-    .then((s) => !!s?.enabled)
-}
-
 function enabledOnce(): Promise<boolean> {
   return simplexJson
     .read((c) => c)
     .once()
     .then((s) => !!s?.enabled)
-}
-
-/**
- * Dependency fragment for setupDependencies: require the bridge running (gated
- * on its `websocket` health check) when the integration is enabled. Reactive.
- */
-export async function simplexDependencies(effects: T.Effects) {
-  return (await enabledReactive(effects))
-    ? {
-        [SIMPLEX_BRIDGE_ID]: {
-          kind: 'running' as const,
-          healthChecks: ['websocket'],
-          versionRange: '>=0.3.0:0',
-        },
-      }
-    : {}
 }
 
 /**

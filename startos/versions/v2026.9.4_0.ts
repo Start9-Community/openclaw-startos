@@ -1,16 +1,17 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
+import { rename, rm } from 'fs/promises'
+import {
+  authProfilesJson,
+  defaultAgentId,
+} from '../fileModels/authProfiles.json'
+import { i18n } from '../i18n'
+import { sdk } from '../sdk'
+import { DOCTOR_TIMEOUT_MS, runOpenclawCli } from '../utils'
 
-export const current = VersionInfo.of({
-  version: '2026.9.4:1',
+export const v_2026_9_4_0 = VersionInfo.of({
+  version: '2026.9.4:0',
   releaseNotes: {
-    en_US: `- Reset Password asks for confirmation before it replaces the current gateway password.
-- Repair OpenClaw, Approve Browser Pairing and Connect WhatsApp show their output with its line breaks intact.
-- The provider, DM Policy, SimpleX channel and Repair OpenClaw command fields describe each of their options.
-- Configure AI Provider reads vLLM's API key, so vLLM can be selected as a provider.
-
-**Updating from a version before 2026.9.4:**
-
-Updates OpenClaw from 2026.7.1 to 2026.9.4.
+    en_US: `Updates OpenClaw from 2026.7.1 to 2026.9.4.
 
 - Search past conversations, use interactive widgets and dashboards in chat, and see Mermaid diagrams rendered inline.
 - Request credentials through masked prompts, approve recurring automations once, and manage plugins from one Plugins workspace.
@@ -23,14 +24,7 @@ Updates OpenClaw from 2026.7.1 to 2026.9.4.
 **Every browser now needs a one-time approval after logging in to the Web UI.** When it stops at "Approve this browser", run the new **Approve Browser Pairing** action. A new **Repair OpenClaw** action runs OpenClaw's own doctor against the stopped service. The container now runs Node 26. Heartbeat instructions live in the gateway configuration now; the workspace \`HEARTBEAT.md\` is gone.
 
 [Full upstream release notes](https://github.com/openclaw/openclaw/releases)`,
-    es_ES: `- Restablecer contraseña pide confirmación antes de reemplazar la contraseña actual del gateway.
-- Reparar OpenClaw, Aprobar emparejamiento del navegador y Conectar WhatsApp muestran su salida con los saltos de línea intactos.
-- Los campos de proveedor, Política de DM, canal de SimpleX y comando de Reparar OpenClaw describen cada una de sus opciones.
-- Configurar proveedor de IA lee la clave de API de vLLM, por lo que vLLM puede elegirse como proveedor.
-
-**Si actualiza desde una versión anterior a 2026.9.4:**
-
-Actualiza OpenClaw de 2026.7.1 a 2026.9.4.
+    es_ES: `Actualiza OpenClaw de 2026.7.1 a 2026.9.4.
 
 - Busca conversaciones anteriores, usa widgets y paneles interactivos en el chat y ve los diagramas Mermaid renderizados en línea.
 - Solicita credenciales mediante avisos enmascarados, aprueba automatizaciones recurrentes una sola vez y gestiona los complementos desde un único espacio de Complementos.
@@ -43,14 +37,7 @@ Actualiza OpenClaw de 2026.7.1 a 2026.9.4.
 **Cada navegador necesita ahora una aprobación única tras iniciar sesión en la interfaz web.** Cuando se detenga en «Approve this browser», ejecuta la nueva acción **Aprobar emparejamiento del navegador**. La nueva acción **Reparar OpenClaw** ejecuta el propio doctor de OpenClaw con el servicio detenido. El contenedor ahora ejecuta Node 26. Las instrucciones del heartbeat viven ahora en la configuración del gateway; el \`HEARTBEAT.md\` del espacio de trabajo desaparece.
 
 [Notas de la versión completas](https://github.com/openclaw/openclaw/releases)`,
-    de_DE: `- Passwort zurücksetzen fragt nach einer Bestätigung, bevor es das aktuelle Gateway-Passwort ersetzt.
-- OpenClaw reparieren, Browser-Kopplung genehmigen und WhatsApp verbinden zeigen ihre Ausgabe mit erhaltenen Zeilenumbrüchen.
-- Die Felder für Anbieter, DM-Richtlinie, SimpleX-Kanal und den Befehl von OpenClaw reparieren beschreiben jede ihrer Optionen.
-- KI-Anbieter konfigurieren liest den API-Schlüssel von vLLM, sodass vLLM als Anbieter gewählt werden kann.
-
-**Bei einem Update von einer Version vor 2026.9.4:**
-
-Aktualisiert OpenClaw von 2026.7.1 auf 2026.9.4.
+    de_DE: `Aktualisiert OpenClaw von 2026.7.1 auf 2026.9.4.
 
 - Durchsuchen Sie frühere Unterhaltungen, nutzen Sie interaktive Widgets und Dashboards im Chat und sehen Sie Mermaid-Diagramme direkt gerendert.
 - Fordern Sie Zugangsdaten über maskierte Eingaben an, genehmigen Sie wiederkehrende Automatisierungen einmalig und verwalten Sie Plugins in einem gemeinsamen Plugin-Bereich.
@@ -63,14 +50,7 @@ Aktualisiert OpenClaw von 2026.7.1 auf 2026.9.4.
 **Jeder Browser braucht nach der Anmeldung an der Web-Oberfläche jetzt eine einmalige Genehmigung.** Bleibt er bei „Approve this browser“ stehen, führen Sie die neue Aktion **Browser-Kopplung genehmigen** aus. Die neue Aktion **OpenClaw reparieren** führt OpenClaws eigenen Doctor bei gestopptem Dienst aus. Der Container läuft jetzt mit Node 26. Die Heartbeat-Anweisungen liegen jetzt in der Gateway-Konfiguration; die \`HEARTBEAT.md\` im Arbeitsbereich entfällt.
 
 [Vollständige Release-Notes](https://github.com/openclaw/openclaw/releases)`,
-    pl_PL: `- Zresetuj hasło prosi o potwierdzenie, zanim zastąpi obecne hasło bramy.
-- Napraw OpenClaw, Zatwierdź parowanie przeglądarki i Połącz WhatsApp pokazują swoje wyniki z zachowanymi podziałami wierszy.
-- Pola dostawcy, Polityki DM, kanału SimpleX i polecenia Napraw OpenClaw opisują każdą ze swoich opcji.
-- Konfiguruj dostawcę AI odczytuje klucz API vLLM, więc vLLM można wybrać jako dostawcę.
-
-**Przy aktualizacji z wersji starszej niż 2026.9.4:**
-
-Aktualizuje OpenClaw z 2026.7.1 do 2026.9.4.
+    pl_PL: `Aktualizuje OpenClaw z 2026.7.1 do 2026.9.4.
 
 - Przeszukuj wcześniejsze rozmowy, korzystaj z interaktywnych widżetów i pulpitów w czacie oraz oglądaj diagramy Mermaid renderowane bezpośrednio.
 - Proszenie o dane uwierzytelniające przez maskowane monity, jednorazowe zatwierdzanie cyklicznych automatyzacji i zarządzanie wtyczkami w jednym miejscu.
@@ -83,14 +63,7 @@ Aktualizuje OpenClaw z 2026.7.1 do 2026.9.4.
 **Każda przeglądarka wymaga teraz jednorazowego zatwierdzenia po zalogowaniu do interfejsu WWW.** Gdy zatrzyma się na „Approve this browser”, uruchom nową akcję **Zatwierdź parowanie przeglądarki**. Nowa akcja **Napraw OpenClaw** uruchamia własnego doctora OpenClaw przy zatrzymanej usłudze. Kontener działa teraz na Node 26. Instrukcje heartbeatu znajdują się teraz w konfiguracji bramy; plik \`HEARTBEAT.md\` w obszarze roboczym znika.
 
 [Pełne informacje o wydaniu](https://github.com/openclaw/openclaw/releases)`,
-    fr_FR: `- Réinitialiser le mot de passe demande une confirmation avant de remplacer le mot de passe actuel du gateway.
-- Réparer OpenClaw, Approuver l'appairage du navigateur et Connecter WhatsApp affichent leur sortie avec ses retours à la ligne intacts.
-- Les champs du fournisseur, de la politique de DM, du canal SimpleX et de la commande de Réparer OpenClaw décrivent chacune de leurs options.
-- Configurer le fournisseur d'IA lit la clé d'API de vLLM, ce qui permet de choisir vLLM comme fournisseur.
-
-**Si vous mettez à jour depuis une version antérieure à 2026.9.4 :**
-
-Met à jour OpenClaw de 2026.7.1 vers 2026.9.4.
+    fr_FR: `Met à jour OpenClaw de 2026.7.1 vers 2026.9.4.
 
 - Recherchez dans vos conversations passées, utilisez des widgets et tableaux de bord interactifs dans le chat et affichez les diagrammes Mermaid directement rendus.
 - Demandez des identifiants via des invites masquées, approuvez une seule fois les automatisations récurrentes et gérez les plugins depuis un espace Plugins unique.
@@ -105,7 +78,38 @@ Met à jour OpenClaw de 2026.7.1 vers 2026.9.4.
 [Notes de version complètes](https://github.com/openclaw/openclaw/releases)`,
   },
   migrations: {
-    up: async ({ effects }) => {},
+    up: async ({ effects }) => {
+      // Before doctor runs: it archives this file where it sat as a retired source.
+      await rename(
+        sdk.volumes.main.subpath(
+          `.openclaw/agents/${defaultAgentId}/agent/auth-profiles.json`,
+        ),
+        authProfilesJson.path,
+      ).catch((e) => {
+        if (e.code !== 'ENOENT') throw e
+      })
+      // Doctor would import it into the heartbeat scratch, doubling the config prompt.
+      await rm(sdk.volumes.main.subpath('.openclaw/workspace/HEARTBEAT.md'), {
+        force: true,
+      })
+
+      for (const args of [
+        ['doctor', '--fix', '--non-interactive'],
+        ['doctor', '--session-sqlite', 'import', '--session-sqlite-all-agents'],
+      ]) {
+        const result = await runOpenclawCli(
+          effects,
+          'openclaw-doctor',
+          args,
+          DOCTOR_TIMEOUT_MS,
+        )
+        if (result.exitCode !== 0) {
+          throw new Error(
+            `${i18n('OpenClaw could not migrate its state')} (openclaw ${args.join(' ')}, exit ${result.exitCode ?? result.exitSignal}):\n${String(result.stderr)}\n${String(result.stdout)}`,
+          )
+        }
+      }
+    },
     down: IMPOSSIBLE,
   },
 })

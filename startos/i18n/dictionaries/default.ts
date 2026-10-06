@@ -41,16 +41,16 @@ const dict = {
   'llama.cpp (local)': 32,
   Disabled: 33,
   'Primary Provider': 34,
-  'The backend your agent uses by default. Cloud providers (Anthropic, OpenAI, Google, xAI) need an API key; local backends (Ollama, vLLM, llama.cpp) run on your StartOS server and are added as a dependency.': 35,
+  'The backend your agent uses by default.\n- Anthropic (Claude): needs an Anthropic API key\n- OpenAI (GPT): needs an OpenAI API key\n- Google (Gemini): needs a Google Gemini API key\n- xAI (Grok): needs an xAI API key\n- Ollama (local): the Ollama service on this server, added as a dependency\n- vLLM (local): the vLLM service on this server, added as a dependency\n- llama.cpp (local): the llama.cpp service on this server, added as a dependency': 35,
   'Fallback Provider (optional)': 36,
-  'Used automatically when the primary is rate-limited or unavailable. Choose Disabled to skip.': 37,
+  'Used automatically when the primary is rate-limited or unavailable.\n- Disabled: no fallback\n- Any other choice: a backend from the same list as Primary Provider': 37,
   'Configure AI Provider': 38,
   'Choose the AI backend your agent uses — a cloud provider (with an API key) or a local model server (Ollama, vLLM, llama.cpp) — pick a model, and optionally add a fallback.': 39,
   'vLLM is selected but its API key could not be read from vllm:public/credentials.json. Make sure vLLM is installed and running.': 40,
 
   // actions/loginToOs.ts
   'StartOS Master Password': 41,
-  'Your StartOS server master password': 42,
+  'Used once to log start-cli in; OpenClaw keeps the resulting key, not the password.': 42,
   'Enter master password': 43,
   'Login to StartOS': 44,
   'Authenticate start-cli with your StartOS server': 45,
@@ -70,7 +70,7 @@ const dict = {
   'Bot Token': 55,
   'Telegram bot token from @BotFather. Create a bot at https://t.me/BotFather and copy the token.': 56,
   'DM Policy': 57,
-  'How to handle direct messages from new users': 58,
+  'Who can message your agent directly.\n- Pairing: a new contact gets a code on first contact and can chat once you approve it\n- Open: anyone can message your agent': 58,
   'Connect Telegram': 59,
   'Connect a Telegram bot so you can chat with your agent from Telegram. Create a bot with @BotFather first.': 60,
   Channels: 61,
@@ -112,7 +112,7 @@ const dict = {
   'Configure SimpleX': 85,
   'Enable the SimpleX channel and configure how it handles direct messages.': 86,
   'Enable SimpleX Channel': 87,
-  'Install the openclaw-simplex plugin and configure it to use the SimpleX Websocket Bridge service. Note: installation may take a few minutes.': 88,
+  '- Disabled: removes the SimpleX channel and uninstalls the openclaw-simplex plugin\n- Enabled: installs the openclaw-simplex plugin, which can take a few minutes, and connects it to the SimpleX Websocket Bridge, which must be installed and running': 88,
   Enabled: 89,
   'Could not install the SimpleX plugin': 90,
   'Could not uninstall the SimpleX plugin: ': 91,
@@ -148,6 +148,9 @@ const dict = {
   'Pairing approved': 115,
   'The Web UI reconnects on its own; reload it if it does not.': 116,
   Approved: 117,
+  'Who can message your agent directly.\n- Allowlist: only the numbers in Allowed Phone Numbers\n- Open: anyone can message your agent': 118,
+  "- Repair config and database: checks OpenClaw's configuration and state, and with Apply recommended repairs on, fixes what it finds\n- Import sessions to SQLite: imports stored session history into OpenClaw's SQLite database, or with Apply changes off, only reports what it would import": 119,
+  'Replaces the current gateway password. The old password stops working, and the new one is shown only once.': 120,
 } as const
 
 /**

@@ -48,7 +48,7 @@ OpenClaw can listen on several messaging platforms in addition to the Web UI. Th
 
 ### Configuration actions
 
-- **Reset Password** — re-runs Set Password to rotate the gateway auth token. The new password is shown once.
+- **Reset Password** — re-runs Set Password to rotate the gateway auth token. It asks you to confirm first, since the old password stops working. The new password is shown once.
 - **Configure AI Provider** — re-run any time to switch providers, change models, rotate API keys, or add/remove a fallback. The form is pre-filled with your current provider and model; API keys are never shown, so leave a key blank to keep the one already saved.
 - **Approve Browser Pairing** — admits every browser currently waiting at **Approve this browser** on the Web UI. Run it right after your own login attempt; an approved browser keeps its access until you remove it under the Web UI's devices.
 - **Login to StartOS** — re-run if `start-cli` ever loses its session (a task automatically reappears on the Dashboard if the package detects it isn't authenticated).

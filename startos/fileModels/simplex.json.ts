@@ -5,7 +5,7 @@ import { sdk } from '../sdk'
 // only whether file exchange with the bridge is enabled. Kept separate from
 // OpenClaw's own `openclaw.json` so toggling it doesn't restart the gateway on
 // unrelated config edits.
-const shape = z.object({
+const shape = z.looseObject({
   enabled: z.boolean().catch(false),
 })
 

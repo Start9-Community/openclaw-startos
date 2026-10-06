@@ -17,7 +17,7 @@ const MANAGED_PROVIDERS = ['anthropic', 'openai', 'google', 'xai'] as const
 // bridge. The save handler writes a `models.providers.<id>` entry pointing at
 // the dependency's resolved bridge endpoint (`depApiBaseUrl` + `path`); the
 // union key is also the `provider/model` prefix and the dependency id
-// setupDependencies gates on. Ollama uses its native API (`api: "ollama"`, NO
+// dependencies.ts gates on. Ollama uses its native API (`api: "ollama"`, NO
 // `/v1` — `/v1` breaks tool calling); vLLM/llama.cpp are OpenAI-compatible
 // (`/v1`). needsKey backends read a real key from the dependency's published
 // credentials; the rest take any value on a private LAN.
@@ -202,7 +202,7 @@ const inputSpec = InputSpec.of({
   primary: Value.union({
     name: i18n('Primary Provider'),
     description: i18n(
-      'The backend your agent uses by default. Cloud providers (Anthropic, OpenAI, Google, xAI) need an API key; local backends (Ollama, vLLM, llama.cpp) run on your StartOS server and are added as a dependency.',
+      'The backend your agent uses by default.\n- Anthropic (Claude): needs an Anthropic API key\n- OpenAI (GPT): needs an OpenAI API key\n- Google (Gemini): needs a Google Gemini API key\n- xAI (Grok): needs an xAI API key\n- Ollama (local): the Ollama service on this server, added as a dependency\n- vLLM (local): the vLLM service on this server, added as a dependency\n- llama.cpp (local): the llama.cpp service on this server, added as a dependency',
     ),
     default: 'anthropic',
     variants: primaryVariants,
@@ -210,7 +210,7 @@ const inputSpec = InputSpec.of({
   fallback: Value.union({
     name: i18n('Fallback Provider (optional)'),
     description: i18n(
-      'Used automatically when the primary is rate-limited or unavailable. Choose Disabled to skip.',
+      'Used automatically when the primary is rate-limited or unavailable.\n- Disabled: no fallback\n- Any other choice: a backend from the same list as Primary Provider',
     ),
     default: 'disabled',
     variants: fallbackVariants,
@@ -334,7 +334,7 @@ export const configureApiCredentials = sdk.Action.withInput(
     // models.providers entries for the selected local backend(s), deep-merged
     // into openclaw.json. A backend the user has stopped using lingers
     // harmlessly (inert once unreferenced; its dependency is dropped by
-    // setupDependencies).
+    // dependencies.ts).
     const providers: Record<string, LocalEntry> = {}
 
     const resolve = async (u: ProviderUnion): Promise<string | undefined> => {
@@ -409,7 +409,7 @@ export const configureApiCredentials = sdk.Action.withInput(
       },
     })
 
-    // setupDependencies reads the model selection reactively, so writing the
+    // dependencies.ts reads the model selection reactively, so writing the
     // config above already updates the local-backend dependency — just restart.
     await effects.restart()
   },

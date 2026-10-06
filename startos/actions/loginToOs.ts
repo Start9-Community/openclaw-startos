@@ -11,7 +11,9 @@ const { InputSpec, Value } = sdk
 const inputSpec = InputSpec.of({
   masterPassword: Value.text({
     name: i18n('StartOS Master Password'),
-    description: i18n('Your StartOS server master password'),
+    description: i18n(
+      'Used once to log start-cli in; OpenClaw keeps the resulting key, not the password.',
+    ),
     required: true,
     default: null,
     placeholder: i18n('Enter master password'),
