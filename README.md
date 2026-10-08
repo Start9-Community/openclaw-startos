@@ -102,20 +102,20 @@ The `start-cli` configuration is rewritten at every start with the server's curr
 
 ## Dependencies
 
-Four, all optional, and **each declared only while it is selected**.
+Four, all optional, and **each active only while it is selected**. All four are declared in `startos/dependencies.ts`, so their version ranges and health checks are published with the package.
 
-| Dependency               | Required             | Kind      | Why                           |
-| ------------------------ | -------------------- | --------- | ----------------------------- |
-| Ollama                   | No — only if chosen  | `running` | Local inference backend       |
-| vLLM                     | No — only if chosen  | `running` | Local inference backend       |
-| llama.cpp                | No — only if chosen  | `running` | Local inference backend       |
-| SimpleX Websocket Bridge | No — only if enabled | `running` | Exchanging files over SimpleX |
+| Dependency               | Required             | Kind      | Version            | Health check | Why                           |
+| ------------------------ | -------------------- | --------- | ------------------ | ------------ | ----------------------------- |
+| Ollama                   | No — only if chosen  | `running` | `>=0.31.2:2`       | `primary`    | Local inference backend       |
+| vLLM                     | No — only if chosen  | `running` | `>=0.23.1-rc.0:13` | `primary`    | Local inference backend       |
+| llama.cpp                | No — only if chosen  | `running` | `>=1.0.9994:1`     | `primary`    | Local inference backend       |
+| SimpleX Websocket Bridge | No — only if enabled | `running` | `>=0.3.0:0`        | `websocket`  | Exchanging files over SimpleX |
 
-**The inference dependency follows the model you are actually using.** The declaration is derived from the primary model and its fallbacks, so selecting a local backend adds it and switching to a cloud provider drops it — including when the switch is made from inside the chat rather than through the action. Each is required to be running _and_ passing its own health check, since an unhealthy model server is the same as an absent one.
+**The inference dependency follows the model you are actually using.** Whether each is active is derived from the primary model and its fallbacks, so selecting a local backend adds it and switching to a cloud provider drops it — including when the switch is made from inside the chat rather than through the action. Each is required to be running _and_ passing its own health check, since an unhealthy model server is the same as an absent one.
 
 **A cloud provider needs no dependency at all**, only an API key and internet.
 
-Local backends are reached over the internal bridge, and their API key is read directly out of the backend's own published volume rather than being asked for again.
+Local backends are reached over the internal bridge, and their API key is read directly out of the backend's own published volume rather than being asked for again: vLLM's `public` volume is mounted read-only into a temporary container and its `credentials.json` read from there.
 
 SimpleX is different in kind: enabling it mounts the bridge's file-exchange directories into this container so the two can hand files to each other, and resolves the bridge's control socket over the bridge network.
 
@@ -157,7 +157,7 @@ Generates the password for the web interface and shows it once.
 
 - **What it changes:** the password in the configuration.
 - **Cost:** the service restarts.
-- **Repeat safety:** each run generates a **new** password and invalidates the old one.
+- **Repeat safety:** each run generates a **new** password and invalidates the old one; once a password exists, the action asks for confirmation before replacing it.
 
 ### Configure AI Provider
 

@@ -2,7 +2,7 @@ import { FileHelper, z } from '@start9labs/start-sdk'
 import { sdk } from '../sdk'
 
 // start-cli config.yaml shape - only validate what we care about
-const shape = z.object({
+const shape = z.looseObject({
   host: z.string().optional().catch(undefined),
 })
 

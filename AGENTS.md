@@ -18,19 +18,25 @@ Freshly scaffolded? Work the
 guide page, not a file in this repo — read it, don't copy it in.
 
 Keep `README.md` (technical reference for an AI support or administering agent) and
-`instructions.md` (end-user docs) in sync with your changes.
+`instructions.md` (end-user docs) in sync with your changes. This file restates neither:
+whoever changes the package has both, so it carries only what they don't — repo mechanics,
+a change that looks right and is not, where the next thing gets added, a naming trap, a
+build or test invocation particular to this repo.
 
-**Bugs and feature requests are GitHub issues on this repo** — file them as you find them.
+**Fix a defect you spot rather than reporting it** — you have the package open and the
+context to be sure. File **a GitHub issue on this repo** only when the call isn't yours to
+make: you can't pin the cause down, two defensible fixes exist, or it's too large to ride on
+the work in hand. An open issue is a report, not a queue — implement one when you're asked
+to or when it's labelled `Approved`, then close it with `Closes #<n>`.
+
 Don't record work in the repo instead: no `TODO.md`, no `NOTES.md`, no `PLAN.md`. What you
 verified, tried, and decided belongs in the commit message and the PR body.
 
 ## This repo
 
-- **`openclaw.json` is co-owned with the application.** OpenClaw rewrites it at runtime — `/model` in chat changes `agents.defaults.model`. That is why `dependencies.ts` reads the model with `.const()` instead of trusting the action to be the only writer; keep any state derived from that file reactive.
-- **`auth-profiles.json` is the package's, under `.startos/` — never move it into `.openclaw/agents/<id>/agent/`.** OpenClaw treats a file of that name there as a retired credential source: doctor archives it, and the gateway refuses an agent whose SQLite store is empty while it exists.
-- **Browser device pairing cannot be disabled** — `dangerouslyDisableDeviceAuth` and `allowInsecureAuth` are retired upstream and doctor strips them. `approve-devices` is how a browser gets past "Approve this browser"; don't reintroduce the flags.
-- **`gateway.trustedProxies` is written from the bridge address in `main.ts` every start.** StartOS's proxy connects from it, and OpenClaw answers unattributed forwarded headers with `403 proxy_attribution_required` — the whole UI. Keep it derived, not hard-coded.
-- **The health check resolves the service's own bridge address via `sdk.host.getOwn`.** The retired `<pkg>.startos` DNS name no longer resolves between containers; same for reaching sibling services (`simplex.ts`, local backends).
-- **`login-to-os` grants root-equivalent server control**, which is why it is `important` and raised only after `check-login` finds `start-cli` unauthenticated — never promote it to `critical` or run it at install.
-- **`--allow-unconfigured` keeps the gateway starting before a provider exists**, so the UI can show what is missing. Don't remove it to "fail fast".
-- **`configureSynapse.ts` is commented out of `actions/index.ts`** — it is unfinished, not shipped. Don't document it or re-enable it without testing.
+- **Keep anything derived from `openclaw.json` reactive.** OpenClaw rewrites the file at runtime (`/model` in chat changes `agents.defaults.model`), so an action is never its only writer.
+- **Never move `auth-profiles.json` into `.openclaw/agents/<id>/agent/`.** Doctor archives a file of that name there, and the gateway then refuses an agent whose SQLite store is empty.
+- **Don't reintroduce `dangerouslyDisableDeviceAuth` or `allowInsecureAuth`.** Upstream retired them and doctor strips them; `approve-devices` is how a browser gets past "Approve this browser".
+- **Keep `gateway.trustedProxies` derived from the bridge address in `main.ts`.** A hard-coded value breaks when the address moves, and OpenClaw then answers the whole UI with `403 proxy_attribution_required`.
+- **Never make the `login-to-os` task `critical` or raise it at install, and keep `--allow-unconfigured` on the gateway.** The task grants root-equivalent server control; the flag is what lets the UI start and show what is missing.
+- **`configureSynapse.ts` is unfinished and not registered in `actions/index.ts`.** Don't document or enable it without testing.

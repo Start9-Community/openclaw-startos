@@ -31,7 +31,9 @@ export const repairOpenclaw = sdk.Action.withInput(
   InputSpec.of({
     command: Value.union({
       name: i18n('Command'),
-      description: null,
+      description: i18n(
+        "- Repair config and database: checks OpenClaw's configuration and state, and with Apply recommended repairs on, fixes what it finds\n- Import sessions to SQLite: imports stored session history into OpenClaw's SQLite database, or with Apply changes off, only reports what it would import",
+      ),
       default: 'repair',
       variants: Variants.of({
         repair: {
@@ -92,7 +94,7 @@ export const repairOpenclaw = sdk.Action.withInput(
       title: i18n('Maintenance Result'),
       message: `openclaw ${args.join(' ')} — ${i18n('Exit Code')}: ${result.exitCode ?? result.exitSignal}`,
       result: {
-        type: 'single',
+        type: 'multiline',
         name: i18n('Output'),
         description: null,
         value: trimOutput(combined) || i18n('No output'),

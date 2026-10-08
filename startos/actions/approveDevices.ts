@@ -83,7 +83,7 @@ export const approveDevices = sdk.Action.withoutInput(
         'The Web UI reconnects on its own; reload it if it does not.',
       ),
       result: {
-        type: 'single',
+        type: 'multiline',
         name: i18n('Approved'),
         description: null,
         value: approved.join('\n'),

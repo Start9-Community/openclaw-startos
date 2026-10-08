@@ -16,7 +16,11 @@ export const setPassword = sdk.Action.withoutInput(
       description: hasPass
         ? i18n('Reset your OpenClaw gateway password')
         : i18n('Set the gateway password needed to log in to the Control UI'),
-      warning: null,
+      warning: hasPass
+        ? i18n(
+            'Replaces the current gateway password. The old password stops working, and the new one is shown only once.',
+          )
+        : null,
       allowedStatuses: 'any',
       group: null,
       visibility: 'enabled',

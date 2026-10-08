@@ -170,7 +170,7 @@ const inputSpec = InputSpec.of({
   channel: Value.union({
     name: i18n('Enable SimpleX Channel'),
     description: i18n(
-      'Install the openclaw-simplex plugin and configure it to use the SimpleX Websocket Bridge service. Note: installation may take a few minutes.',
+      '- Disabled: removes the SimpleX channel and uninstalls the openclaw-simplex plugin\n- Enabled: installs the openclaw-simplex plugin, which can take a few minutes, and connects it to the SimpleX Websocket Bridge, which must be installed and running',
     ),
     default: 'disabled',
     variants: Variants.of({
@@ -180,7 +180,9 @@ const inputSpec = InputSpec.of({
         spec: InputSpec.of({
           dmPolicy: Value.select({
             name: i18n('DM Policy'),
-            description: i18n('How to handle direct messages from new users'),
+            description: i18n(
+              'Who can message your agent directly.\n- Pairing: a new contact gets a code on first contact and can chat once you approve it\n- Open: anyone can message your agent',
+            ),
             default: 'pairing',
             values: {
               pairing: i18n('Pairing (approve code on first contact)'),

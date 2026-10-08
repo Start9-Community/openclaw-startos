@@ -22,7 +22,9 @@ const inputSpec = InputSpec.of({
   }),
   dmPolicy: Value.select({
     name: i18n('DM Policy'),
-    description: i18n('How to handle direct messages from new users'),
+    description: i18n(
+      'Who can message your agent directly.\n- Pairing: a new contact gets a code on first contact and can chat once you approve it\n- Open: anyone can message your agent',
+    ),
     default: 'pairing',
     values: dmPolicies,
   }),

@@ -38,11 +38,11 @@ export async function runOpenclawCli(
     mainMounts(),
     name,
     (subc) =>
-      subc.exec(
-        ['openclaw', ...args],
-        { user: 'node', env: OPENCLAW_CLI_ENV },
-        timeoutMs,
-      ),
+      subc.exec(['openclaw', ...args], {
+        user: 'node',
+        env: OPENCLAW_CLI_ENV,
+        timeout: timeoutMs,
+      }),
   )
 }
 
@@ -66,14 +66,16 @@ export async function readDependencyApiKey(
       sdk.Mounts.of().mountDependency({
         dependencyId,
         volumeId: 'public',
-        subpath: 'credentials.json',
-        mountpoint: '/credentials.json',
-        type: 'file',
+        subpath: null,
+        mountpoint: '/public',
         readonly: true,
       }),
       `${dependencyId}-creds`,
       async (sub) => {
-        const raw = await fs.readFile(sub.subpath('/credentials.json'), 'utf8')
+        const raw = await fs.readFile(
+          sub.subpath('/public/credentials.json'),
+          'utf8',
+        )
         return credentialsSchema.parse(JSON.parse(raw)).apiKey
       },
     )
