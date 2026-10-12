@@ -100,6 +100,7 @@ export const repairOpenclaw = sdk.Action.withInput(
         value: trimOutput(combined) || i18n('No output'),
         copyable: true,
         qr: false,
+        filename: null,
         masked: false,
       },
     }

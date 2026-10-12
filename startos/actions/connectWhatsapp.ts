@@ -112,6 +112,7 @@ export const connectWhatsapp = sdk.Action.withInput(
         copyable: false,
         masked: true,
         qr: false,
+        filename: null,
       },
     }
   },

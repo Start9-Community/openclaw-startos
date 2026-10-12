@@ -47,6 +47,7 @@ export const setPassword = sdk.Action.withoutInput(
         copyable: true,
         masked: true,
         qr: false,
+        launchable: false,
       },
     }
   },

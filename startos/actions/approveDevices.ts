@@ -89,6 +89,7 @@ export const approveDevices = sdk.Action.withoutInput(
         value: approved.join('\n'),
         copyable: false,
         qr: false,
+        filename: null,
         masked: false,
       },
     }
