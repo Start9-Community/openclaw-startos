@@ -9,6 +9,7 @@ import { sdk } from './sdk'
 import { mainMounts, uiPort } from './utils'
 import { watchSimplexAddress, withSimplexMounts } from './simplex'
 import { requestSimplexPluginUpgrade } from './actions/configureSimplex'
+import { refreshLocalBackends } from './localBackends'
 
 // Maps each provider's auth-profile id to the env var OpenClaw reads its API
 // key from. Keep in sync with MANAGED_PROVIDERS in configureApiCredentials.ts.
@@ -68,6 +69,8 @@ export const main = sdk.setupMain(async ({ effects }) => {
   await openclawJson.merge(effects, {
     gateway: { trustedProxies: bridge.proxies },
   })
+
+  await refreshLocalBackends(effects)
 
   // Base volume mount, then let each optional integration append its own mounts
   // when enabled (each returns mounts unchanged when disabled).

@@ -108,14 +108,14 @@ Four, all optional, and **each active only while it is selected**. All four are 
 | ------------------------ | -------------------- | --------- | ------------------ | ------------ | ----------------------------- |
 | Ollama                   | No — only if chosen  | `running` | `>=0.31.2:2`       | `primary`    | Local inference backend       |
 | vLLM                     | No — only if chosen  | `running` | `>=0.23.1-rc.0:13` | `primary`    | Local inference backend       |
-| llama.cpp                | No — only if chosen  | `running` | `>=1.0.9994:1`     | `primary`    | Local inference backend       |
+| llama.cpp                | No — only if chosen  | `running` | `>=11960:1`        | `primary`    | Local inference backend       |
 | SimpleX Websocket Bridge | No — only if enabled | `running` | `>=0.3.0:0`        | `websocket`  | Exchanging files over SimpleX |
 
 **The inference dependency follows the model you are actually using.** Whether each is active is derived from the primary model and its fallbacks, so selecting a local backend adds it and switching to a cloud provider drops it — including when the switch is made from inside the chat rather than through the action. Each is required to be running _and_ passing its own health check, since an unhealthy model server is the same as an absent one.
 
 **A cloud provider needs no dependency at all**, only an API key and internet.
 
-Local backends are reached over the internal bridge, and their API key is read directly out of the backend's own published volume rather than being asked for again: vLLM's `public` volume is mounted read-only into a temporary container and its `credentials.json` read from there.
+Local backends are reached over the internal bridge, and their API key is read directly out of the backend's own published volume rather than being asked for again: the `public` volume of vLLM or llama.cpp is mounted read-only into a temporary container and its `credentials.json` read from there. llama.cpp is reached on its key-gated `api-key` host (interface `openai-api`), not on the password-protected Web UI host. Each start re-resolves every configured local backend's address and key and rewrites them in `openclaw.json` when they changed, so a moved address or rotated key heals on restart.
 
 SimpleX is different in kind: enabling it mounts the bridge's file-exchange directories into this container so the two can hand files to each other, and resolves the bridge's control socket over the bridge network.
 

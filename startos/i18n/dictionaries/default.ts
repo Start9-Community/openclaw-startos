@@ -46,7 +46,7 @@ const dict = {
   'Used automatically when the primary is rate-limited or unavailable.\n- Disabled: no fallback\n- Any other choice: a backend from the same list as Primary Provider': 37,
   'Configure AI Provider': 38,
   'Choose the AI backend your agent uses — a cloud provider (with an API key) or a local model server (Ollama, vLLM, llama.cpp) — pick a model, and optionally add a fallback.': 39,
-  'vLLM is selected but its API key could not be read from vllm:public/credentials.json. Make sure vLLM is installed and running.': 40,
+  "The selected local backend's API key could not be read. Make sure it is installed, running, and up to date, then run Configure AI Provider again.": 40,
 
   // actions/loginToOs.ts
   'StartOS Master Password': 41,
