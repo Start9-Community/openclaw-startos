@@ -58,7 +58,7 @@ const llamaCpp = sdk.Dependency.optional('llama-cpp', {
     icon: 'https://raw.githubusercontent.com/Start9Labs/llama-cpp-startos/master/icon.png',
     title: 'llama.cpp',
   },
-  versionRange: '>=1.0.9994:1',
+  versionRange: '>=11960:1',
   kind: 'running',
   healthChecks: ['primary'],
   enabled: providerInUse('llama-cpp'),

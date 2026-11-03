@@ -2,7 +2,7 @@ import { T } from '@start9labs/start-sdk'
 import { sdk } from '../sdk'
 import { authProfilesJson, AuthProfile } from '../fileModels/authProfiles.json'
 import { openclawJson } from '../fileModels/openclaw.json'
-import { readDependencyApiKey } from '../utils'
+import { depApiBaseUrl, depApiKey, LOCAL_BACKENDS } from '../localBackends'
 import { i18n } from '../i18n'
 
 const { InputSpec, Value, Variants } = sdk
@@ -12,48 +12,6 @@ const { InputSpec, Value, Variants } = sdk
 // The union key is OpenClaw's provider prefix in `provider/model` refs; the env
 // var is what main.ts sets. Keep both in sync with main.ts `providerKeyEnvVar`.
 const MANAGED_PROVIDERS = ['anthropic', 'openai', 'google', 'xai'] as const
-
-// Local inference backends route to the matching StartOS package over the LXC
-// bridge. The save handler writes a `models.providers.<id>` entry pointing at
-// the dependency's resolved bridge endpoint (`depApiBaseUrl` + `path`); the
-// union key is also the `provider/model` prefix and the dependency id
-// dependencies.ts gates on. Ollama uses its native API (`api: "ollama"`, NO
-// `/v1` — `/v1` breaks tool calling); vLLM/llama.cpp are OpenAI-compatible
-// (`/v1`). needsKey backends read a real key from the dependency's published
-// credentials; the rest take any value on a private LAN.
-const LOCAL_BACKENDS: Record<
-  string,
-  { path: string; api: string; needsKey: boolean }
-> = {
-  ollama: { path: '', api: 'ollama', needsKey: false },
-  vllm: { path: '/v1', api: 'openai-completions', needsKey: true },
-  'llama-cpp': { path: '/v1', api: 'openai-completions', needsKey: false },
-}
-
-// Local-inference deps (ollama/vLLM/llama.cpp) each export an OpenAI-compatible
-// `api` interface on a MultiHost named `api-multi`. Resolve its plain-HTTP
-// LXC-bridge base URL (e.g. `http://10.0.3.5:11434`) at apply time — the retired
-// `<pkg>.startos` DNS no longer resolves between containers. String-literal ids
-// because these are optional runtime deps, not npm `-startos` packages whose id
-// constants we could import.
-const DEP_API_HOST_ID = 'api-multi'
-const DEP_API_INTERFACE_ID = 'api'
-
-const depApiBaseUrl = (effects: T.Effects, packageId: string) =>
-  sdk.host
-    .get(effects, { hostId: DEP_API_HOST_ID, packageId }, (host) => {
-      const iface =
-        host &&
-        Object.values(host.bindings)
-          .flatMap((b) => Object.values(b.interfaces))
-          .find((i) => i.id === DEP_API_INTERFACE_ID)
-      return iface
-        ? iface.addressInfo
-            .filter({ kind: 'bridge', predicate: (h) => !h.ssl })
-            .format('urlstring')[0]
-        : undefined
-    })
-    .once()
 
 // Curated default-model catalogs (exact API model id → label). The chosen model
 // is only the default; it can be changed anytime from Web UI chat with /model,
@@ -360,17 +318,13 @@ export const configureApiCredentials = sdk.Action.withInput(
       // Local backend — an openai-completions provider in models.providers.
       const backend = LOCAL_BACKENDS[sel]
       const model = (u.value.model ?? '').trim()
-      let apiKey = 'startos' // ignored by keyless backends (Ollama/llama.cpp)
-      if (backend.needsKey) {
-        const k = await readDependencyApiKey(effects, sel)
-        if (!k) {
-          throw new Error(
-            i18n(
-              'vLLM is selected but its API key could not be read from vllm:public/credentials.json. Make sure vLLM is installed and running.',
-            ),
-          )
-        }
-        apiKey = k
+      const apiKey = await depApiKey(effects, sel)
+      if (!apiKey) {
+        throw new Error(
+          i18n(
+            "The selected local backend's API key could not be read. Make sure it is installed, running, and up to date, then run Configure AI Provider again.",
+          ),
+        )
       }
       const baseUrl = await depApiBaseUrl(effects, sel)
       if (!baseUrl) {
@@ -381,7 +335,7 @@ export const configureApiCredentials = sdk.Action.withInput(
         )
       }
       const entry: LocalEntry = providers[sel] ?? {
-        baseUrl: `${baseUrl}${backend.path}`,
+        baseUrl,
         apiKey,
         api: backend.api,
         timeoutSeconds: 300,
