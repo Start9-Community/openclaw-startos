@@ -43,7 +43,7 @@ OpenClaw is installed into the image at build time by the official `openclaw.bot
 - **OpenClaw** — edit `Dockerfile` and update the `OPENCLAW_VERSION` ARG default to the npm `latest` value (no `v` prefix), keeping any `-N` correction suffix. Then set `startos/versions/current.ts` per the warning above — base version only, downstream bumped. If the new OpenClaw gates startup on a state migration of its own (`gateway.maintenance_required`, exit 78), run it from `migrations.up`; the packaging guide's versions page says when that earns `current.ts` its own file.
 - **GitHub CLI** — edit `Dockerfile` and update the `GH_VERSION` ARG default to the new version (no `v` prefix).
 
-After editing, confirm with `grep -rn '<OLD_VERSION>' --include='*.ts' --include=Dockerfile` that no stale references remain, then update `releaseNotes` in `startos/versions/current.ts` per the package's versioning conventions.
+After editing, confirm with `grep -rn '<OLD_VERSION>' --include='*.ts' --include=Dockerfile` that no stale references remain.
 
 ## The baked `start-cli` (`START_CLI_VERSION`)
 
@@ -69,4 +69,4 @@ gh release view "start-cli/v<version>" -R Start9Labs/start-technologies \
   | grep -E '^start-cli_(x86_64|aarch64)-linux$'
 ```
 
-Finally, check whether the new CLI needs a newer StartOS than the package itself does — **the two floors are independent.** `start-cli` 1.1.0 replaced cookie auth with per-device signing keys, so its `auth login` only works against a StartOS that speaks signature auth, which first shipped in `start-os/v0.4.0`. The package's own floor is the manifest `osVersion`, which start-sdk 2.0 sets to `0.4.0-beta.10` — a version that was never released, since the beta line ends at `beta.9`. So every host that can install this package already clears the CLI's floor, but that is a coincidence of the two numbers, not a rule. Re-derive it on the next CLI bump rather than assuming the SDK's floor covers it.
+Finally, check whether the new CLI needs a newer StartOS than the package's manifest `osVersion` — **the two floors are independent**, so re-derive the CLI's floor on every CLI bump rather than assuming the package's covers it.
