@@ -14,7 +14,7 @@ OpenClaw is installed into the image at build time by the official `openclaw.bot
 
   Pin that value verbatim in `Dockerfile` as `OPENCLAW_VERSION`. Never pin a `beta`/`alpha` dist-tag.
 
-  Two more pins move with it. Upstream drops Node lines between releases, so check the floor against the base image (`FROM node:<major>-bookworm-slim` in `Dockerfile`):
+  Two more pins move with it. Upstream drops Node lines between releases, so check the floor against the base image (`FROM node:<version>-bookworm-slim@<digest>` in `Dockerfile`). That base is pinned by tag and digest: on each bump, and whenever Node.js publishes a security release, move it to the newest release of its line, tag and digest together (`docker buildx imagetools inspect node:<version>-bookworm-slim`):
 
   ```
   npm view openclaw@<version> engines.node
