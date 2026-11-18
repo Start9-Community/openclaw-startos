@@ -1,4 +1,5 @@
-FROM node:26-bookworm-slim
+# Pinned to a patched Node.js release by tag and digest; move both together.
+FROM node:26.13.1-bookworm-slim@sha256:5df79989ed685e09f0a98019db4cebfb22fb9df1a53c0161664a011f7ff6b0f1
 
 ARG START_CLI_VERSION
 ARG GH_VERSION=2.100.0
