@@ -62,9 +62,13 @@ export const main = sdk.setupMain(async ({ effects }) => {
         url: addresses?.format('urlstring')[0],
         proxies:
           addresses?.format('hostname-info').map((h) => h.hostname) ?? [],
+        // The bridge keeps the list nonempty when every off-box address is
+        // disabled: OpenClaw stands in for an empty list only at start, and
+        // refuses its own later config writes (`/model`) against one.
         origins: [
           ...new Set(
-            addressInfo?.nonLocal
+            addressInfo
+              ?.filter({ exclude: { kind: ['localhost', 'link-local'] } })
               .format('urlstring')
               .map((u) => new URL(u).origin) ?? [],
           ),
@@ -73,8 +77,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
     })
     .const()
 
-  // Unattributed forwarded headers get a 403 (`proxy_attribution_required`),
-  // and a browser origin outside allowedOrigins is refused.
+  // Unattributed forwarded headers get a 403 (`proxy_attribution_required`).
   await openclawJson.merge(effects, {
     gateway: {
       trustedProxies: bridge.proxies,
