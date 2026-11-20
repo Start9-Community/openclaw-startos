@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from 'fs/promises'
-import { installRootCA, loginToOs } from './actions/loginToOs'
+import { installRootCA } from './actions/loginToOs'
 import { authProfilesJson } from './fileModels/authProfiles.json'
 import { openclawJson } from './fileModels/openclaw.json'
 import { startCliConfigYaml } from './fileModels/startCliConfig.yaml'
@@ -52,22 +52,34 @@ export const main = sdk.setupMain(async ({ effects }) => {
   // StartOS's reverse proxy connects from, which OpenClaw must be told to trust.
   const bridge = await sdk.host
     .getOwn(effects, uiHostId, (host) => {
-      const addresses = Object.values(host?.bindings ?? {})
+      const addressInfo = Object.values(host?.bindings ?? {})
         .flatMap((b) => Object.values(b.interfaces))
-        .find((i) => i.id === uiInterfaceId)
-        ?.addressInfo.filter({ kind: 'bridge', predicate: (h) => !h.ssl })
+        .find((i) => i.id === uiInterfaceId)?.addressInfo
+      const addresses = addressInfo
+        ?.filter({ kind: 'bridge', predicate: (h) => !h.ssl })
         .filter({ kind: 'ipv4' })
       return {
         url: addresses?.format('urlstring')[0],
         proxies:
           addresses?.format('hostname-info').map((h) => h.hostname) ?? [],
+        origins: [
+          ...new Set(
+            addressInfo?.nonLocal
+              .format('urlstring')
+              .map((u) => new URL(u).origin) ?? [],
+          ),
+        ],
       }
     })
     .const()
 
-  // Unattributed forwarded headers get a 403 (`proxy_attribution_required`).
+  // Unattributed forwarded headers get a 403 (`proxy_attribution_required`),
+  // and a browser origin outside allowedOrigins is refused.
   await openclawJson.merge(effects, {
-    gateway: { trustedProxies: bridge.proxies },
+    gateway: {
+      trustedProxies: bridge.proxies,
+      controlUi: { allowedOrigins: bridge.origins },
+    },
   })
 
   await refreshLocalBackends(effects)
@@ -153,26 +165,6 @@ export const main = sdk.setupMain(async ({ effects }) => {
         },
         requires: ['install-root-ca', 'chown'],
       })
-      .addOneshot('check-login', {
-        subcontainer: openclawSub,
-        exec: {
-          fn: async (subcontainer) => {
-            const result = await subcontainer.exec(
-              ['start-cli', 'auth', 'session', 'list'],
-              { user: 'node', env: { HOME: '/data' } },
-            )
-            if (result.exitCode !== 0) {
-              await sdk.action.createOwnTask(effects, loginToOs, 'important', {
-                reason: i18n(
-                  'Login to StartOS to enable start-cli authentication for managing the server',
-                ),
-              })
-            }
-            return null
-          },
-        },
-        requires: ['primary'],
-      })
       .addOneshot('check-simplex-plugin', {
         subcontainer: openclawSub,
         exec: {
@@ -227,7 +219,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
             return null
           },
         },
-        requires: ['primary', 'check-login'],
+        requires: ['primary'],
       })
   )
 })

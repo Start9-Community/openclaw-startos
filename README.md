@@ -49,13 +49,12 @@ One image, built here.
 
 **The image also installs `start-cli`**, pinned to a version by a build argument. That binary is what lets the agent administer the server when you grant it access, and it is why the container needs StartOS's root certificate.
 
-Two oneshots run before the daemon, and three after it:
+Two oneshots run before the daemon, and two after it:
 
 | Oneshot                 | When   | Purpose                                                    |
 | ----------------------- | ------ | ---------------------------------------------------------- |
 | `install-root-ca`       | Before | Installs StartOS's root CA so the container trusts the OS  |
 | `chown`                 | Before | Hands `/data` to the unprivileged user the gateway runs as |
-| `check-login`           | After  | Raises a task if `start-cli` is not authenticated          |
 | `check-simplex-plugin`  | After  | Brings the SimpleX plugin up to the pinned version         |
 | `server-state-snapshot` | After  | Writes a server inventory into the agent's memory file     |
 
@@ -94,7 +93,7 @@ Four models, each owning a different boundary.
 
 **The main configuration is shared with the application, not owned by the package.** OpenClaw edits it too — changing the model from inside the chat writes to the same file — which is why the dependency declaration reads it reactively rather than trusting the action to be the only writer.
 
-Two gateway settings are **pinned** with `z.literal(true)`: the control UI being enabled, and the host-header origin fallback. The reason is structural: **StartOS fronts the gateway with its own reverse proxy on addresses that OpenClaw's origin check rejects.** With the fallback off, the interface simply refuses to connect. `main` also writes `gateway.trustedProxies` every start, set to the bridge address the proxy connects from — without it OpenClaw answers every proxied request with `403 proxy_attribution_required`. What remains in front of the gateway is its password and a one-time approval per browser — see [Network Access and Interfaces](#network-access-and-interfaces).
+Two gateway settings are **pinned** with `z.literal`: the control UI is enabled, and OpenClaw's Host-header origin fallback (`dangerouslyAllowHostHeaderOriginFallback`) is off. In its place, `main` writes `gateway.controlUi.allowedOrigins` every start: the origin of every non-local address of the `ui` interface (LAN IPs, `.local`, Tor, and any domain you add), read reactively, so adding or removing an address restarts the service with the new list. A browser on any other origin is refused. `main` also writes `gateway.trustedProxies` every start, set to the bridge address the proxy connects from — without it OpenClaw answers every proxied request with `403 proxy_attribution_required`. What remains in front of the gateway is its password and a one-time approval per browser — see [Network Access and Interfaces](#network-access-and-interfaces).
 
 **API keys are stored in one place and consumed in another.** The action writes them into the auth-profiles file; OpenClaw reads them from the environment. `main` bridges the two at start, so a key added by the action reaches the gateway on the restart that follows. The file is the package's, which is why it lives under `.startos/` and not in OpenClaw's agent directory: a file of that name there is a retired credential source that OpenClaw's doctor archives and that makes the gateway refuse an agent whose own credential store is empty.
 
@@ -129,7 +128,7 @@ One interface.
 
 Bound on the `ui-multi` MultiHost over HTTP and not masked.
 
-**The gateway password is the gate, and each browser is approved once.** OpenClaw's origin checking is relaxed for the reason given under [File Models](#file-models); its device pairing is not, and cannot be. A browser that passes the password is held at "Approve this browser" until the Approve Browser Pairing action admits it, and it then keeps a per-device credential until it is removed in the Web UI's device list. So anyone who can reach this address, knows the password, and can run that action has the agent — and, if StartOS access has been granted, the server. A `critical` task blocks the service from starting until that password is set, so there is no window where it is reachable without one.
+**The gateway password is the gate, and each browser is approved once.** OpenClaw accepts browser origins only from this interface's own addresses (see [File Models](#file-models)), and its device pairing cannot be relaxed. A browser that passes the password is held at "Approve this browser" until the Approve Browser Pairing action admits it, and it then keeps a per-device credential until it is removed in the Web UI's device list. So anyone who can reach this address, knows the password, and can run that action has the agent — and, if StartOS access has been granted, the server. A `critical` task blocks the service from starting until that password is set, so there is no window where it is reachable without one.
 
 Outbound, the gateway talks to whichever provider is configured, to any messaging channel you connect, and — for local backends and SimpleX — to the sibling service over the internal bridge.
 
@@ -141,9 +140,9 @@ The first visit to the Web UI from any browser ends at "Approve this browser" af
 
 **Neither can be skipped** — `critical` blocks startup, and an agent with no model and no password is not a usable state.
 
-Once running, the gateway comes up on its interface and two more things happen automatically: it checks whether `start-cli` is authenticated and raises a task if not, and it writes the server snapshot into the agent's memory.
+Install also raises an **`optional`** Login to StartOS task. It is raised at install only, so once dismissed or done it never comes back; the action stays available. Once running, the gateway comes up on its interface and writes the server snapshot into the agent's memory.
 
-**Granting StartOS access is opt-in and deliberately not a critical task.** It is offered only after the gateway is up and only because the agent could not authenticate — see the action below before running it.
+**Granting StartOS access is opt-in and deliberately not a critical task** — see the action below before running it.
 
 **Updating from an older release migrates OpenClaw's state.** The migration moves the auth-profiles file out of the agent directory, then runs OpenClaw's own `doctor --fix --non-interactive` and its session import against the stopped service — the same repair OpenClaw's updater runs. A nonzero exit fails the update with doctor's output, leaves the data version where it was, and re-runs the migration on the next init; the Repair OpenClaw action is the manual route for anything doctor reports it cannot fix on its own.
 
@@ -198,7 +197,7 @@ Admits every browser waiting at "Approve this browser" on the Web UI.
 Authenticates the agent's `start-cli` against this server, using your StartOS master password.
 
 - **This grants the agent root-equivalent control of the server.** It can then start and stop packages, read logs, change network settings, and run backups. The action's own warning says to do it only on a server designated for development, and that warning should be taken literally.
-- **What it changes:** a `start-cli` session stored on the volume.
+- **What it changes:** a `start-cli` session stored on the volume. It can run before the first start: it hands `/data/.startos` to the gateway's user itself.
 - Everything that reaches the chat can then reach the server, which makes the gateway password and the channel DM policies load-bearing for the whole box.
 
 ### Revoke StartOS Access
@@ -221,13 +220,13 @@ Runs one of OpenClaw's own maintenance commands against the stopped service and 
 
 Three, two of them blocking.
 
-| Task                  | Severity    | Raised when                                       | Cleared when    |
-| --------------------- | ----------- | ------------------------------------------------- | --------------- |
-| Set Gateway Password  | `critical`  | Any init that finds no password                   | The action runs |
-| Configure AI Provider | `critical`  | Install with no credentials stored                | The action runs |
-| Login to StartOS      | `important` | A start-up that finds `start-cli` unauthenticated | The action runs |
+| Task                  | Severity   | Raised when                        | Cleared when    |
+| --------------------- | ---------- | ---------------------------------- | --------------- |
+| Set Gateway Password  | `critical` | Any init that finds no password    | The action runs |
+| Configure AI Provider | `critical` | Install with no credentials stored | The action runs |
+| Login to StartOS      | `optional` | Install                            | The action runs |
 
-`critical` blocks the service from starting, so a fresh install shows the two setup tasks and nothing else. `important` is advisory — the login task appears every start until it is either done or ignored, and ignoring it is a legitimate choice.
+`critical` blocks the service from starting, so a fresh install shows the two setup tasks first. The login task is `optional` and raised once: dismissing it is a legitimate choice, and nothing raises it again.
 
 ## Health Checks
 
@@ -254,7 +253,7 @@ A restored instance comes back configured and remembers what it knew. The `start
 ## Limitations and Differences
 
 1. **Granting StartOS access gives the agent root-equivalent control of the server.** It is optional and revocable, and it is the single most consequential thing this package can do.
-2. **Origin checking is relaxed and the reverse proxy is trusted**, because StartOS's addresses do not satisfy OpenClaw's checks. The gateway password and a one-time approval per browser are the gate.
+2. **The reverse proxy is trusted, and browser origins are limited to the interface's own addresses.** A browser reaching the gateway by any other name is refused. The gateway password and a one-time approval per browser are the gate.
 3. **The backup holds every credential**, including the server session.
 4. **The configuration is co-owned with the application**, which edits it at runtime — a change made in the chat is as real as one made through an action.
 5. **The agent's memory contains a server inventory**, rewritten every start.
@@ -310,7 +309,7 @@ actions:
 tasks:
   - { action: set-password, severity: critical } # reactive
   - { action: configure-api-credentials, severity: critical } # install
-  - { action: login-to-os, severity: important } # raised at start when unauthenticated
+  - { action: login-to-os, severity: optional } # install only; never re-raised
 health_checks:
   - primary # checkWebUrl against the service's own bridge address; says nothing about the model
 ```

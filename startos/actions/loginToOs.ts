@@ -60,6 +60,11 @@ export const loginToOs = sdk.Action.withInput(
       'start-cli-login',
       async (subc) => {
         await installRootCA(effects, subc)
+        // Runnable before the first start, so establish the ownership the
+        // daemon's chown oneshot would otherwise provide.
+        await subc.execFail(['chown', '-R', 'node:node', '/data/.startos'], {
+          user: 'root',
+        })
         return subc.exec(['start-cli', 'auth', 'login'], {
           user: 'node',
           env: { HOME: '/data', PASSWORD: input.masterPassword },

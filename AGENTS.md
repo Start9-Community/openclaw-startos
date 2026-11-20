@@ -38,5 +38,6 @@ verified, tried, and decided belongs in the commit message and the PR body.
 - **Never move `auth-profiles.json` into `.openclaw/agents/<id>/agent/`.** Doctor archives a file of that name there, and the gateway then refuses an agent whose SQLite store is empty.
 - **Don't reintroduce `dangerouslyDisableDeviceAuth` or `allowInsecureAuth`.** Upstream retired them and doctor strips them; `approve-devices` is how a browser gets past "Approve this browser".
 - **Keep `gateway.trustedProxies` derived from the bridge address in `main.ts`.** A hard-coded value breaks when the address moves, and OpenClaw then answers the whole UI with `403 proxy_attribution_required`.
-- **Never make the `login-to-os` task `critical` or raise it at install, and keep `--allow-unconfigured` on the gateway.** The task grants root-equivalent server control; the flag is what lets the UI start and show what is missing.
+- **Raise the `login-to-os` task only from `installTasks`, as `optional`, and keep `--allow-unconfigured` on the gateway.** The task grants root-equivalent server control, and a task raised from `main` returns on every start after the owner dismisses it; the flag is what lets the UI start and show what is missing.
+- **Don't turn `dangerouslyAllowHostHeaderOriginFallback` back on.** `main.ts` writes the `ui` interface's origins to `allowedOrigins`; a missing origin belongs in that list.
 - **`configureSynapse.ts` is unfinished and not registered in `actions/index.ts`.** Don't document or enable it without testing.

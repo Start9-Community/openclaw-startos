@@ -6,7 +6,7 @@ const dict = {
   'Web Interface': 1,
   'OpenClaw Gateway is ready': 2,
   'OpenClaw Gateway is not ready': 3,
-  'Login to StartOS to enable start-cli authentication for managing the server': 4,
+  'Optionally authenticate start-cli so OpenClaw can administer this server': 4,
 
   // interfaces.ts
   'Web UI': 5,

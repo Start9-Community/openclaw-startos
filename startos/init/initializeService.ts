@@ -51,7 +51,7 @@ export const initializeService = sdk.setupOnInit(async (effects, kind) => {
       auth: { mode: 'password' },
       controlUi: {
         enabled: true,
-        dangerouslyAllowHostHeaderOriginFallback: true,
+        dangerouslyAllowHostHeaderOriginFallback: false,
       },
     },
     agents: {

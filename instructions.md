@@ -28,7 +28,7 @@ OpenClaw runs an LLM of your choosing. On its own it's a chat agent with no acce
    Optionally add a fallback provider, used automatically when the primary is rate-limited or unavailable. Change the model anytime from Web UI chat with the `/model` command.
 
 4. Open the **Web UI** interface from the Dashboard and log in with the password from **Set Password**. The page then stops at **Approve this browser**: go back to the Dashboard, run **Approve Browser Pairing**, and the page connects on its own. Every new browser or device needs this once. Confirm the WebChat loads and that you can send a prompt.
-5. Once the gateway is running you'll see an additional task: **Login to StartOS**. Run it to authenticate the bundled `start-cli` with your server — this is what lets the agent act on the host. The action asks for your StartOS master password. **This grants the agent root-equivalent access to your server. Only do this on a machine you treat as expendable.**
+5. _(Optional)_ The Dashboard also shows a **Login to StartOS** task, once. Run it only if you want the agent to administer your server: it authenticates the bundled `start-cli` with your server, which is what lets the agent act on the host, and asks for your StartOS master password. Dismiss it if you don't; it won't come back, and the action stays under Actions. **This grants the agent root-equivalent access to your server. Only do this on a machine you treat as expendable.**
 
 ## Using OpenClaw
 
@@ -51,7 +51,7 @@ OpenClaw can listen on several messaging platforms in addition to the Web UI. Th
 - **Reset Password** — re-runs Set Password to rotate the gateway auth token. It asks you to confirm first, since the old password stops working. The new password is shown once.
 - **Configure AI Provider** — re-run any time to switch providers, change models, rotate API keys, or add/remove a fallback. The form is pre-filled with your current provider and model; API keys are never shown, so leave a key blank to keep the one already saved.
 - **Approve Browser Pairing** — admits every browser currently waiting at **Approve this browser** on the Web UI. Run it right after your own login attempt; an approved browser keeps its access until you remove it under the Web UI's devices.
-- **Login to StartOS** — re-run if `start-cli` ever loses its session (a task automatically reappears on the Dashboard if the package detects it isn't authenticated).
+- **Login to StartOS** — grants the agent server administration, or re-grants it if `start-cli` ever loses its session. The Dashboard offers it once after install; after that, run it from Actions when you want it.
 - **Revoke StartOS Access** — un-enrolls OpenClaw's key from your server and deletes it, cutting off server administration without uninstalling the service, and leaving no session to clean up by hand. Run _Login to StartOS_ again to grant it back.
 - **Repair OpenClaw** — with the service stopped, runs OpenClaw's built-in doctor and shows what it printed: check the configuration and database (and optionally apply its repairs), or import old session history into OpenClaw's database. Package updates run these repairs for you; reach for this only if the service refuses to start afterwards, and back up first when applying changes.
 
