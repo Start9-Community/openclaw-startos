@@ -32,12 +32,13 @@ const authSchema = z.looseObject({
   password: z.string().optional().catch(undefined),
 })
 
-// z.literal, not lenient defaults: StartOS fronts the gateway on addresses
-// OpenClaw's origin check rejects, so with this off the UI refuses to connect.
-// The compensating control is the critical password task -- never weaken that.
+// allowedOrigins is the UI interface's own origins, written by main.ts each
+// start; with it, OpenClaw's Host-header origin fallback stays off. OpenClaw
+// still accepts same-host private-IP and `.local` origins outside the list.
 const controlUiSchema = z.looseObject({
   enabled: z.literal(true).catch(true),
-  dangerouslyAllowHostHeaderOriginFallback: z.literal(true).catch(true),
+  allowedOrigins: z.array(z.string()).optional().catch(undefined),
+  dangerouslyAllowHostHeaderOriginFallback: z.literal(false).catch(false),
 })
 
 const gatewaySchema = z.looseObject({
